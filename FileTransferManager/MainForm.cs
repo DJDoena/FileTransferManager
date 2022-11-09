@@ -77,6 +77,7 @@ namespace DoenaSoft.FileTransferManager
                 fbd.ShowNewFolderButton = false;
                 fbd.SelectedPath = m_LastFolder;
                 fbd.Description = "Select Folder to Copy";
+                fbd.RootFolder = Environment.SpecialFolder.MyComputer;
 
                 if (fbd.ShowDialog() == DialogResult.OK)
                 {
@@ -118,6 +119,7 @@ namespace DoenaSoft.FileTransferManager
                 fbd.ShowNewFolderButton = true;
                 fbd.SelectedPath = TargetLocationTextBox.Text;
                 fbd.Description = "Select Target Folder";
+                fbd.RootFolder = Environment.SpecialFolder.MyComputer;
 
                 if (fbd.ShowDialog() == DialogResult.OK)
                 {
