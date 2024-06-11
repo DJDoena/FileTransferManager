@@ -12,6 +12,8 @@ namespace DoenaSoft.FileTransferManager;
 
 internal partial class MainForm : Form
 {
+    private string _selectedSourcePath;
+
     private string _selectedTargetPath;
 
     private long _divider;
@@ -30,6 +32,8 @@ internal partial class MainForm : Form
 
     public MainForm()
     {
+        _selectedSourcePath = null;
+
         _selectedTargetPath = null;
 
         _divider = 1;
@@ -70,7 +74,15 @@ internal partial class MainForm : Form
 
         sourceDialog.ShowNewFolderButton = false;
         sourceDialog.Description = "Select Source Folder to Copy";
-        sourceDialog.RootFolder = Environment.SpecialFolder.MyComputer;
+
+        if (Directory.Exists(_selectedSourcePath))
+        {
+            sourceDialog.SelectedPath = _selectedSourcePath;
+        }
+        else
+        {
+            sourceDialog.RootFolder = Environment.SpecialFolder.MyComputer;
+        }
 
         if (sourceDialog.ShowDialog() == DialogResult.OK
             && this.ShowTargetDialog(out var targetFolder))
@@ -78,6 +90,8 @@ internal partial class MainForm : Form
             SourceListBox.Items.Add(new CopyItem(new DirectoryInfo(sourceDialog.SelectedPath), targetFolder));
 
             this.FormatBytes();
+
+            _selectedSourcePath = sourceDialog.SelectedPath;
         }
     }
 
@@ -87,11 +101,14 @@ internal partial class MainForm : Form
 
         targetDialog.ShowNewFolderButton = true;
         targetDialog.Description = "Select Target Folder to Copy";
-        targetDialog.RootFolder = Environment.SpecialFolder.MyComputer;
 
-        if (_selectedTargetPath != null && Directory.Exists(_selectedTargetPath))
+        if (Directory.Exists(_selectedTargetPath))
         {
             targetDialog.SelectedPath = _selectedTargetPath;
+        }
+        else
+        {
+            targetDialog.RootFolder = Environment.SpecialFolder.MyComputer;
         }
 
         if (targetDialog.ShowDialog() == DialogResult.OK)
@@ -116,8 +133,16 @@ internal partial class MainForm : Form
 
         sourceDialog.CheckFileExists = true;
         sourceDialog.Multiselect = true;
-        sourceDialog.RestoreDirectory = true;
         sourceDialog.Title = "Select File(s) to Copy";
+
+        if (Directory.Exists(_selectedSourcePath))
+        {
+            sourceDialog.InitialDirectory = _selectedSourcePath;
+        }
+        else
+        {
+            sourceDialog.RestoreDirectory = true;
+        }
 
         if (sourceDialog.ShowDialog() == DialogResult.OK
             && this.ShowTargetDialog(out var targetFolder))
@@ -128,6 +153,8 @@ internal partial class MainForm : Form
             }
 
             this.FormatBytes();
+
+            _selectedSourcePath = sourceDialog.InitialDirectory;
         }
     }
 
@@ -320,7 +347,7 @@ internal partial class MainForm : Form
 
             foreach (var item in items)
             {
-                if (this.CopyFile(item))
+                if (!this.CopyFile(item))
                 {
                     return;
                 }
