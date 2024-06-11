@@ -569,12 +569,12 @@ internal partial class MainForm : Form
     {
         if (_copyThread != null)
         {
-            _abortTimer = new System.Windows.Forms.Timer
+            _abortTimer = new System.Windows.Forms.Timer()
             {
                 Interval = 100,
             };
 
-            _abortTimer.Tick += new EventHandler(this.AbortTimerTick);
+            _abortTimer.Tick += this.AbortTimerTick;
             _abortTimer.Start();
 
             _copyThread.Abort();
@@ -583,7 +583,7 @@ internal partial class MainForm : Form
 
     private void AbortTimerTick(object sender, EventArgs e)
     {
-        if (_copyThread.IsAlive == false)
+        if (!_copyThread.IsAlive)
         {
             _abortTimer.Stop();
 
