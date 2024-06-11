@@ -308,7 +308,7 @@ internal partial class MainForm : Form
     {
         var threadAbort = false;
 
-        _start = DateTime.Now;
+        _start = DateTime.UtcNow;
 
         try
         {
@@ -455,11 +455,11 @@ internal partial class MainForm : Form
 
     private DialogResult ShowTimedMessageBox(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon)
     {
-        var start = DateTime.Now;
+        var start = DateTime.UtcNow;
 
         var decision = this.ShowMessageBox(message, title, buttons, icon);
 
-        var span = DateTime.Now.Subtract(start);
+        var span = DateTime.UtcNow.Subtract(start);
 
         _start = _start.Add(span);
 
@@ -534,7 +534,7 @@ internal partial class MainForm : Form
 
     private void SetRemaingLabelText(DateTime start, long bytes)
     {
-        var span = DateTime.Now.Subtract(start);
+        var span = DateTime.UtcNow.Subtract(start);
 
         var completeTimeTicks = (decimal)(ProgressBar.Maximum) / ProgressBar.Value * span.Ticks;
 
@@ -589,7 +589,7 @@ internal partial class MainForm : Form
 
             _copyThread = null;
 
-            this.UpdateProgressBar(-1, DateTime.Now);
+            this.UpdateProgressBar(-1, DateTime.UtcNow);
 
             CopyFinished?.Invoke(this, EventArgs.Empty);
         }
