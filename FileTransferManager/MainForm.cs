@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -38,6 +39,8 @@ internal partial class MainForm : Form
         this.InitializeComponent();
 
         this.Icon = Resources.djdsoft;
+
+        this.Text += $" {Assembly.GetExecutingAssembly().GetName().Version}";
     }
 
     private void OnRemoveEntryButtonClick(object sender, EventArgs e)
