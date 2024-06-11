@@ -21,6 +21,12 @@ internal partial class MainForm : Form
 
     private System.Windows.Forms.Timer _abortTimer;
 
+    private DateTime _start;
+
+    private long _bytes;
+
+    private string _overwrite;
+
     public MainForm()
     {
         _selectedTargetPath = null;
@@ -55,8 +61,7 @@ internal partial class MainForm : Form
         }
     }
 
-    private void OnAddFolderButtonClick(object sender
-        , EventArgs e)
+    private void OnAddFolderButtonClick(object sender, EventArgs e)
     {
         using var sourceDialog = new FolderBrowserDialog();
 
@@ -133,51 +138,27 @@ internal partial class MainForm : Form
 
         ProgressBar.Value = 0;
 
-        var items = new List<CopyItem>();
-        foreach (CopyItem item in SourceListBox.Items)
+        var targetItems = new List<CopyItem>();
+
+        foreach (CopyItem sourceItems in SourceListBox.Items)
         {
-            if (item.SourceFolder?.Exists == true)
+            if (sourceItems.SourceFolder?.Exists == true)
             {
-                var option = WithSubFoldersCheckBox.Checked
-                    ? SearchOption.AllDirectories
-                    : SearchOption.TopDirectoryOnly;
-
-                var files = item.SourceFolder.GetFiles("*.*", option);
-
-                foreach (var file in files)
-                {
-                    var fileFolderName = file.DirectoryName;
-
-                    CopyItem newItem;
-                    if (!string.Equals(fileFolderName, item.SourceFolder.FullName, StringComparison.InvariantCulture))
-                    {
-                        var relativeSourcePath = fileFolderName.Substring(item.SourceFolder.FullName.Length + 1);
-
-                        var targetPath = new DirectoryInfo(Path.Combine(item.TargetFolder.FullName, relativeSourcePath));
-
-                        newItem = new CopyItem(file, targetPath);
-                    }
-                    else
-                    {
-                        newItem = new CopyItem(file, item.TargetFolder);
-                    }
-
-                    items.Add(newItem);
-                }
+                this.AddFolder(targetItems, sourceItems);
             }
-            else if (item.SourceFile?.Exists == true)
+            else if (sourceItems.SourceFile?.Exists == true)
             {
-                items.Add(item);
+                targetItems.Add(sourceItems);
             }
             else
             {
-                MessageBox.Show("Something is weird about\n" + item, "?!?", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.ShowMessageBox("Something is weird about\n" + sourceItems, "?!?", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
                 return;
             }
         }
 
-        var allBytes = this.CheckDriveSize(items);
+        var allBytes = this.CheckDriveSize(targetItems);
 
         if (allBytes <= 0)
         {
@@ -190,12 +171,49 @@ internal partial class MainForm : Form
 
         this.SwitchUI(false);
 
-        _copyThread = new Thread(new ParameterizedThreadStart(this.ThreadRun))
+        _overwrite = OverwriteComboBox.Text;
+
+        _copyThread = new Thread(new ParameterizedThreadStart(this.CopyFiles))
         {
             IsBackground = true,
         };
 
-        _copyThread.Start(new object[] { items, OverwriteComboBox.Text });
+        _copyThread.Start(targetItems);
+    }
+
+    private void AddFolder(List<CopyItem> targetItems, CopyItem sourceFolderItem)
+    {
+        var option = WithSubFoldersCheckBox.Checked
+            ? SearchOption.AllDirectories
+            : SearchOption.TopDirectoryOnly;
+
+        var files = sourceFolderItem.SourceFolder.GetFiles("*.*", option);
+
+        foreach (var file in files)
+        {
+            AddFolderFile(targetItems, sourceFolderItem, file);
+        }
+    }
+
+    private static void AddFolderFile(List<CopyItem> targetItems, CopyItem sourceFolderItem, FileInfo sourceFile)
+    {
+        var fileFolderName = sourceFile.DirectoryName;
+
+        CopyItem sourceFileItem;
+        if (!string.Equals(fileFolderName, sourceFolderItem.SourceFolder.FullName, StringComparison.InvariantCulture))
+        {
+            var relativeSourcePath = fileFolderName.Substring(sourceFolderItem.SourceFolder.FullName.Length + 1);
+
+            var targetPath = new DirectoryInfo(Path.Combine(sourceFolderItem.TargetFolder.FullName, relativeSourcePath));
+
+            sourceFileItem = new CopyItem(sourceFile, targetPath);
+        }
+        else
+        {
+            sourceFileItem = new CopyItem(sourceFile, sourceFolderItem.TargetFolder);
+        }
+
+        targetItems.Add(sourceFileItem);
     }
 
     private long CheckDriveSize(List<CopyItem> items)
@@ -219,7 +237,7 @@ internal partial class MainForm : Form
 
             if (drive.AvailableFreeSpace <= driveBytes)
             {
-                MessageBox.Show($"Target is Full!{Environment.NewLine}Available: {FormatBytes(drive.AvailableFreeSpace)}{Environment.NewLine}Needed: {FormatBytes(driveBytes)}"
+                this.ShowMessageBox($"Target is Full!{Environment.NewLine}Available: {FormatBytes(drive.AvailableFreeSpace)}{Environment.NewLine}Needed: {FormatBytes(driveBytes)}"
                     , "Target Full", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
                 return -1;
@@ -283,127 +301,37 @@ internal partial class MainForm : Form
         CopyFinished -= this.OnMainFormCopyFinished;
     }
 
-    private void ThreadRun(object parameter)
+    private void CopyFiles(object parameter)
     {
         var threadAbort = false;
 
-        var start = DateTime.Now;
+        _start = DateTime.Now;
 
         try
         {
-            var parameters = (object[])parameter;
-
-            var items = (List<CopyItem>)parameters[0];
+            var items = (List<CopyItem>)parameter;
 
             items.Sort((left, right) => left.SourceFile.FullName.CompareTo(right.SourceFile.FullName));
 
-            var overwrite = (string)parameters[1];
-
-            long bytes = 0;
+            _bytes = 0;
 
             foreach (var item in items)
             {
-                if (!item.TargetFolder.Exists)
-                {
-                    item.TargetFolder.Create();
-                }
-
-                var targetFile = new FileInfo(Path.Combine(item.TargetFolder.FullName, item.SourceFile.Name));
-
-                var result = DialogResult.Yes;
-
-                if (targetFile.Exists)
-                {
-                    result = DialogResult.No;
-
-                    if (overwrite == "ask")
-                    {
-                        var startTicks = DateTime.Now.Ticks;
-
-                        result = MessageBox.Show($"Overwrite \"{targetFile.FullName}\"\nfrom \"{item.SourceFile.FullName}\"?", "Overwrite?"
-                            , MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
-
-                        var endTicks = DateTime.Now.Ticks;
-
-                        var span = new TimeSpan(endTicks - startTicks);
-
-                        start = start.Add(span);
-                    }
-                    else if (overwrite == "always")
-                    {
-                        result = DialogResult.Yes;
-                    }
-                }
-
-                if (result == DialogResult.Cancel)
+                if (this.CopyFile(item))
                 {
                     return;
-                }
-                else if (result == DialogResult.No)
-                {
-                    this.Invoke(new Action(() =>
-                    {
-                        ProgressBar.Maximum -= (int)(item.SourceFile.Length / _divider);
-
-                        this.UpdateProgressBar(bytes, start);
-
-                        this.Refresh();
-                    }));
-
-                    continue;
-                }
-                else if (result == DialogResult.Yes)
-                {
-                    try
-                    {
-                        File.Copy(item.SourceFile.FullName, targetFile.FullName, true);
-                    }
-                    catch (IOException ioEx)
-                    {
-                        long startTicks = DateTime.Now.Ticks;
-
-                        if (MessageBox.Show(ioEx.Message + "\nContinue?", "Continue?", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                        {
-                            long endTicks = DateTime.Now.Ticks;
-
-                            TimeSpan span = new TimeSpan(endTicks - startTicks);
-
-                            start = start.Add(span);
-
-                            continue;
-                        }
-                        else
-                        {
-                            return;
-                        }
-                    }
-
-                    bytes += item.SourceFile.Length;
-
-                    this.Invoke(new Action(() =>
-                    {
-                        this.UpdateProgressBar(bytes, start);
-
-                        this.Refresh();
-                    }));
                 }
             }
         }
         catch (IOException ioEx)
         {
-            this.Invoke(new Action(() =>
-            {
-                MessageBox.Show(ioEx.Message, "?!?", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }));
+            this.ShowMessageBox(ioEx.Message, "?!?", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
             return;
         }
         catch (ThreadAbortException)
         {
-            this.Invoke(new Action(() =>
-            {
-                MessageBox.Show("The copy process was cancelled.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }));
+            this.ShowMessageBox("The copy process was cancelled.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
             threadAbort = true;
 
@@ -411,10 +339,7 @@ internal partial class MainForm : Form
         }
         catch (Exception ex)
         {
-            this.Invoke(new Action(() =>
-            {
-                MessageBox.Show(ex.Message, "?!?", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }));
+            this.ShowMessageBox(ex.Message, "?!?", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
             return;
         }
@@ -422,21 +347,148 @@ internal partial class MainForm : Form
         {
             if (threadAbort == false)
             {
-                this.Invoke(new Action(() =>
+                this.ExecuteOnUI(() =>
                 {
-                    this.UpdateProgressBar(-1, start);
+                    this.UpdateProgressBar(-1, _start);
 
                     CopyFinished?.Invoke(this, EventArgs.Empty);
-                }));
+                });
             }
         }
     }
 
+    private bool CopyFile(CopyItem item)
+    {
+        if (!item.TargetFolder.Exists)
+        {
+            item.TargetFolder.Create();
+        }
+
+        var targetFile = new FileInfo(Path.Combine(item.TargetFolder.FullName, item.SourceFile.Name));
+
+        var overwriteDecision = this.GetOverwriteDecision(item, targetFile);
+
+        if (overwriteDecision == DialogResult.Cancel)
+        {
+            return false;
+        }
+        else if (overwriteDecision == DialogResult.No)
+        {
+            this.SkipFile(item);
+
+            return true;
+        }
+        else if (overwriteDecision == DialogResult.Yes)
+        {
+            var continueDecision = this.OverwriteFile(item, targetFile);
+
+            return continueDecision;
+        }
+        else
+        {
+            throw new NotSupportedException();
+        }
+    }
+
+    private void SkipFile(CopyItem item)
+    {
+        this.ExecuteOnUI(() =>
+        {
+            ProgressBar.Maximum -= (int)(item.SourceFile.Length / _divider);
+
+            this.UpdateProgressBar(_bytes, _start);
+
+            this.Refresh();
+        });
+    }
+
+    private bool OverwriteFile(CopyItem item, FileInfo targetFile)
+    {
+        try
+        {
+            File.Copy(item.SourceFile.FullName, targetFile.FullName, true);
+        }
+        catch (IOException ioEx)
+        {
+            var continueDecision = this.ShowTimedMessageBox($"{ioEx.Message}\nContinue?", "Continue?", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            return continueDecision == DialogResult.Yes;
+        }
+
+        _bytes += item.SourceFile.Length;
+
+        this.ExecuteOnUI(() =>
+        {
+            this.UpdateProgressBar(_bytes, _start);
+
+            this.Refresh();
+        });
+
+        return true;
+    }
+
+    private DialogResult GetOverwriteDecision(CopyItem item, FileInfo targetFile)
+    {
+        if (!targetFile.Exists)
+        {
+            return DialogResult.Yes;
+        }
+        else if (_overwrite == "ask")
+        {
+            var decision = this.ShowTimedMessageBox($"Overwrite \"{targetFile.FullName}\"\nfrom \"{item.SourceFile.FullName}\"?", "Overwrite?"
+                , MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+
+            return decision;
+        }
+        else if (_overwrite == "always")
+        {
+            return DialogResult.Yes;
+        }
+        else
+        {
+            return DialogResult.No;
+        }
+    }
+
+    private DialogResult ShowTimedMessageBox(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon)
+    {
+        var start = DateTime.Now;
+
+        var decision = this.ShowMessageBox(message, title, buttons, icon);
+
+        var span = DateTime.Now.Subtract(start);
+
+        _start = _start.Add(span);
+
+        return decision;
+    }
+
+    private void ExecuteOnUI(Action action)
+    {
+        if (this.InvokeRequired)
+        {
+            this.Invoke(action);
+        }
+        else
+        {
+            action();
+        }
+    }
+
+    private DialogResult ShowMessageBox(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon)
+    {
+        var func = new Func<DialogResult>(() => MessageBox.Show(this, message, title, buttons, icon));
+
+        var result = this.InvokeRequired
+            ? (DialogResult)this.Invoke(func)
+            : func();
+
+        return result;
+    }
     private void OnMainFormLoad(object sender, EventArgs e)
         => OverwriteComboBox.SelectedIndex = 0;
 
-    private void OnClearListButtonClick(object sender
-        , EventArgs e)
+    private void OnClearListButtonClick(object sender, EventArgs e)
     {
         SourceListBox.Items.Clear();
 
@@ -458,8 +510,6 @@ internal partial class MainForm : Form
         }
         else
         {
-            var now = DateTime.Now;
-
             var value = (int)(bytes / _divider);
 
             if (TaskbarManager.IsPlatformSupported)
@@ -471,40 +521,45 @@ internal partial class MainForm : Form
 
             if (ProgressBar.Value != 0)
             {
-                var span = now.Subtract(start);
-
-                var completeTimeTicks = (decimal)(ProgressBar.Maximum) / ProgressBar.Value * span.Ticks;
-
-                var remainingTime = new TimeSpan(Convert.ToInt64(completeTimeTicks) - span.Ticks);
-
-                var speed = bytes * 1000m / (decimal)(span.TotalMilliseconds);
-
-                var speedText = $" ({FormatBytes(Convert.ToInt64(speed))}/s)";
-
-                if (remainingTime.Hours > 0)
-                {
-                    int minutes = remainingTime.Minutes;
-
-                    if (remainingTime.Seconds > 30)
-                    {
-                        minutes++;
-                    }
-
-                    RemaingLabel.Text = $"est. {remainingTime.Hours} hours, {minutes} minutes remaining{speedText}";
-                }
-                else if (remainingTime.Minutes > 0)
-                {
-                    RemaingLabel.Text = $"est. {remainingTime.Minutes} minutes, {remainingTime.Seconds} seconds remaining{speedText}";
-                }
-                else
-                {
-                    RemaingLabel.Text = $"est. {remainingTime.Seconds} seconds remaining{speedText}";
-                }
+                this.SetRemaingLabelText(start, bytes);
             }
         }
 
         ProgressBar.Update();
         ProgressBar.Refresh();
+    }
+
+    private void SetRemaingLabelText(DateTime start, long bytes)
+    {
+        var span = DateTime.Now.Subtract(start);
+
+        var completeTimeTicks = (decimal)(ProgressBar.Maximum) / ProgressBar.Value * span.Ticks;
+
+        var remainingTime = new TimeSpan(Convert.ToInt64(completeTimeTicks) - span.Ticks);
+
+        var speed = bytes * 1000m / (decimal)(span.TotalMilliseconds);
+
+        var speedText = $" ({FormatBytes(Convert.ToInt64(speed))}/s)";
+
+        if (remainingTime.Hours > 0)
+        {
+            var minutes = remainingTime.Minutes;
+
+            if (remainingTime.Seconds > 30)
+            {
+                minutes++;
+            }
+
+            RemaingLabel.Text = $"est. {remainingTime.Hours} hours, {minutes} minutes remaining{speedText}";
+        }
+        else if (remainingTime.Minutes > 0)
+        {
+            RemaingLabel.Text = $"est. {remainingTime.Minutes} minutes, {remainingTime.Seconds} seconds remaining{speedText}";
+        }
+        else
+        {
+            RemaingLabel.Text = $"est. {remainingTime.Seconds} seconds remaining{speedText}";
+        }
     }
 
     private void OnAbortButtonClick(object sender, EventArgs e)
@@ -595,7 +650,7 @@ internal partial class MainForm : Form
             roundBytes = Math.Round(bytes / (decimal)Math.Pow(2, 40), 1, MidpointRounding.AwayFromZero);
             bytesPower = " TByte";
         }
-        if (bytes / Math.Pow(2, 30) > 1)
+        else if (bytes / Math.Pow(2, 30) > 1)
         {
             roundBytes = Math.Round(bytes / (decimal)(Math.Pow(2, 30)), 1, MidpointRounding.AwayFromZero);
             bytesPower = " GByte";
