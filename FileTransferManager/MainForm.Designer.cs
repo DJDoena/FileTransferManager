@@ -28,10 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            this.TargetLocationTextBox = new System.Windows.Forms.TextBox();
-            this.TargetLocationButton = new System.Windows.Forms.Button();
-            this.TargetLabel = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.SourceListBox = new System.Windows.Forms.ListBox();
             this.AddFileButton = new System.Windows.Forms.Button();
@@ -50,40 +46,10 @@
             this.ImportListButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
-            // TargetLocationTextBox
-            // 
-            this.TargetLocationTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.TargetLocationTextBox.Location = new System.Drawing.Point(84, 13);
-            this.TargetLocationTextBox.Name = "TargetLocationTextBox";
-            this.TargetLocationTextBox.ReadOnly = true;
-            this.TargetLocationTextBox.Size = new System.Drawing.Size(525, 20);
-            this.TargetLocationTextBox.TabIndex = 0;
-            // 
-            // TargetLocationButton
-            // 
-            this.TargetLocationButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.TargetLocationButton.Location = new System.Drawing.Point(615, 11);
-            this.TargetLocationButton.Name = "TargetLocationButton";
-            this.TargetLocationButton.Size = new System.Drawing.Size(85, 23);
-            this.TargetLocationButton.TabIndex = 1;
-            this.TargetLocationButton.Text = "Select Target";
-            this.TargetLocationButton.UseVisualStyleBackColor = true;
-            this.TargetLocationButton.Click += new System.EventHandler(this.OnTargetLocationButtonClick);
-            // 
-            // TargetLabel
-            // 
-            this.TargetLabel.AutoSize = true;
-            this.TargetLabel.Location = new System.Drawing.Point(12, 16);
-            this.TargetLabel.Name = "TargetLabel";
-            this.TargetLabel.Size = new System.Drawing.Size(41, 13);
-            this.TargetLabel.TabIndex = 2;
-            this.TargetLabel.Text = "Target:";
-            // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 40);
+            this.label1.Location = new System.Drawing.Point(12, 19);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(44, 13);
             this.label1.TabIndex = 3;
@@ -96,16 +62,16 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.SourceListBox.FormattingEnabled = true;
             this.SourceListBox.HorizontalScrollbar = true;
-            this.SourceListBox.Location = new System.Drawing.Point(84, 40);
+            this.SourceListBox.Location = new System.Drawing.Point(84, 14);
             this.SourceListBox.Name = "SourceListBox";
-            this.SourceListBox.Size = new System.Drawing.Size(525, 342);
+            this.SourceListBox.Size = new System.Drawing.Size(525, 368);
             this.SourceListBox.TabIndex = 4;
             this.SourceListBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.OnSourceListBoxKeyDown);
             // 
             // AddFileButton
             // 
             this.AddFileButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.AddFileButton.Location = new System.Drawing.Point(615, 40);
+            this.AddFileButton.Location = new System.Drawing.Point(615, 14);
             this.AddFileButton.Name = "AddFileButton";
             this.AddFileButton.Size = new System.Drawing.Size(85, 23);
             this.AddFileButton.TabIndex = 5;
@@ -116,7 +82,7 @@
             // AddFolderButton
             // 
             this.AddFolderButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.AddFolderButton.Location = new System.Drawing.Point(615, 69);
+            this.AddFolderButton.Location = new System.Drawing.Point(615, 43);
             this.AddFolderButton.Name = "AddFolderButton";
             this.AddFolderButton.Size = new System.Drawing.Size(85, 23);
             this.AddFolderButton.TabIndex = 6;
@@ -127,7 +93,7 @@
             // RemoveEntryButton
             // 
             this.RemoveEntryButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.RemoveEntryButton.Location = new System.Drawing.Point(615, 127);
+            this.RemoveEntryButton.Location = new System.Drawing.Point(615, 101);
             this.RemoveEntryButton.Name = "RemoveEntryButton";
             this.RemoveEntryButton.Size = new System.Drawing.Size(85, 23);
             this.RemoveEntryButton.TabIndex = 7;
@@ -206,7 +172,7 @@
             // ClearListButton
             // 
             this.ClearListButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.ClearListButton.Location = new System.Drawing.Point(615, 156);
+            this.ClearListButton.Location = new System.Drawing.Point(615, 130);
             this.ClearListButton.Name = "ClearListButton";
             this.ClearListButton.Size = new System.Drawing.Size(85, 23);
             this.ClearListButton.TabIndex = 14;
@@ -252,7 +218,7 @@
             // ImportListButton
             // 
             this.ImportListButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.ImportListButton.Location = new System.Drawing.Point(615, 98);
+            this.ImportListButton.Location = new System.Drawing.Point(615, 72);
             this.ImportListButton.Name = "ImportListButton";
             this.ImportListButton.Size = new System.Drawing.Size(85, 23);
             this.ImportListButton.TabIndex = 18;
@@ -281,14 +247,9 @@
             this.Controls.Add(this.AddFileButton);
             this.Controls.Add(this.SourceListBox);
             this.Controls.Add(this.label1);
-            this.Controls.Add(this.TargetLabel);
-            this.Controls.Add(this.TargetLocationButton);
-            this.Controls.Add(this.TargetLocationTextBox);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MinimumSize = new System.Drawing.Size(720, 505);
             this.Name = "MainForm";
             this.Text = "File Transfer Manager";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.OnMainFormClosing);
             this.Load += new System.EventHandler(this.OnMainFormLoad);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -296,10 +257,6 @@
         }
 
         #endregion
-
-        private System.Windows.Forms.TextBox TargetLocationTextBox;
-        private System.Windows.Forms.Button TargetLocationButton;
-        private System.Windows.Forms.Label TargetLabel;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.ListBox SourceListBox;
         private System.Windows.Forms.Button AddFileButton;
