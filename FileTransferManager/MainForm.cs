@@ -718,18 +718,35 @@ internal partial class MainForm : Form
 
         if (ofd.ShowDialog() == DialogResult.OK)
         {
-            using var sr = new StreamReader(ofd.FileName, Encoding.GetEncoding(1252));
-
-            while (sr.EndOfStream == false)
+            try
             {
-                string file = sr.ReadLine();
+                using var sr = new StreamReader(ofd.FileName, Encoding.GetEncoding(1252));
 
-                if (File.Exists(file))
+                while (sr.EndOfStream == false)
                 {
-                    SourceListBox.Items.Add(file);
+                    var itemParts = sr.ReadLine().Split(';');
 
-                    this.FormatBytes();
+                    if (itemParts.Length != 2)
+                    {
+                        continue;
+                    }
+                    else if (Directory.Exists(itemParts[0]))
+                    {
+                        SourceListBox.Items.Add(new CopyItem(new DirectoryInfo(itemParts[0]), new DirectoryInfo(itemParts[1])));
+
+                        this.FormatBytes();
+                    }
+                    else if (File.Exists(itemParts[0]))
+                    {
+                        SourceListBox.Items.Add(new CopyItem(new FileInfo(itemParts[0]), new DirectoryInfo(itemParts[1])));
+
+                        this.FormatBytes();
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                this.ShowMessageBox(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
