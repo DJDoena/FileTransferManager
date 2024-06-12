@@ -8,15 +8,12 @@ internal sealed class CopyItem
 
     internal FileInfo SourceFile { get; }
 
-    // public DirectoryInfo RootFolder { get; }
-
     internal DirectoryInfo TargetFolder { get; }
 
     internal CopyItem(DirectoryInfo sourceFolder, DirectoryInfo targetFolder)
     {
         this.SourceFolder = sourceFolder;
         this.SourceFile = null;
-        //this.RootFolder = rootFolder;
         this.TargetFolder = targetFolder;
     }
 
@@ -24,7 +21,6 @@ internal sealed class CopyItem
     {
         this.SourceFolder = null;
         this.SourceFile = sourceFile;
-        //this.RootFolder = rootFolder;
         this.TargetFolder = targetFolder;
     }
 

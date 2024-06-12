@@ -12,41 +12,41 @@ internal sealed class Copier
 
     private long _bytes;
 
-    private readonly IReadOnlyCollection<CopyItem> _targetItems;
+    private readonly IReadOnlyCollection<CopyItem> _items;
 
-    private readonly string _overwrite;
+    private readonly OverwriteMode _overwrite;
 
     private readonly long _divider;
 
-    private readonly IMainForm _mainForm;
+    private readonly IView _view;
 
-    private Thread _copyThread;
+    private Thread _worker;
 
     private System.Windows.Forms.Timer _abortTimer;
 
-    public Copier(IReadOnlyCollection<CopyItem> targetItems, string overwrite, long divider, IMainForm mainForm)
+    public Copier(IReadOnlyCollection<CopyItem> items, OverwriteMode overwrite, long divider, IView view)
     {
-        _targetItems = targetItems;
+        _items = items;
         _overwrite = overwrite;
         _divider = divider;
-        _mainForm = mainForm;
+        _view = view;
     }
 
     public event EventHandler CopyFinished;
 
     internal void Start()
     {
-        _copyThread = new Thread(this.CopyFiles)
+        _worker = new Thread(this.CopyFiles)
         {
             IsBackground = true,
         };
 
-        _copyThread.Start();
+        _worker.Start();
     }
 
     internal void Abort()
     {
-        if (_copyThread != null)
+        if (_worker != null)
         {
             _abortTimer = new System.Windows.Forms.Timer()
             {
@@ -56,7 +56,7 @@ internal sealed class Copier
             _abortTimer.Tick += this.AbortTimerTick;
             _abortTimer.Start();
 
-            _copyThread.Abort();
+            _worker.Abort();
         }
     }
 
@@ -70,7 +70,7 @@ internal sealed class Copier
         {
             _bytes = 0;
 
-            foreach (var item in _targetItems)
+            foreach (var item in _items)
             {
                 if (!this.CopyFile(item))
                 {
@@ -80,13 +80,13 @@ internal sealed class Copier
         }
         catch (IOException ioEx)
         {
-            _mainForm.ShowMessageBox(ioEx.Message, "?!?", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            _view.ShowMessageBox(ioEx.Message, "?!?", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
             return;
         }
         catch (ThreadAbortException)
         {
-            _mainForm.ShowMessageBox("The copy process was cancelled.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _view.ShowMessageBox("The copy process was cancelled.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
             threadAbort = true;
 
@@ -94,7 +94,7 @@ internal sealed class Copier
         }
         catch (Exception ex)
         {
-            _mainForm.ShowMessageBox(ex.Message, "?!?", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            _view.ShowMessageBox(ex.Message, "?!?", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
             return;
         }
@@ -104,7 +104,7 @@ internal sealed class Copier
             {
                 this.ExecuteOnUI(() =>
                 {
-                    _mainForm.UpdateProgressBar(-1, _start, _divider);
+                    _view.UpdateProgressBar(-1, _divider, _start);
 
                     CopyFinished?.Invoke(this, EventArgs.Empty);
                 });
@@ -149,11 +149,11 @@ internal sealed class Copier
     {
         this.ExecuteOnUI(() =>
         {
-            _mainForm.ProgressBarMax -= (int)(item.SourceFile.Length / _divider);
+            _view.ProgressBarMax -= (int)(item.SourceFile.Length / _divider);
 
-            _mainForm.UpdateProgressBar(_bytes, _start, _divider);
+            _view.UpdateProgressBar(_bytes, _divider, _start);
 
-            _mainForm.Refresh();
+            _view.Refresh();
         });
     }
 
@@ -174,9 +174,9 @@ internal sealed class Copier
 
         this.ExecuteOnUI(() =>
         {
-            _mainForm.UpdateProgressBar(_bytes, _start, _divider);
+            _view.UpdateProgressBar(_bytes, _divider, _start);
 
-            _mainForm.Refresh();
+            _view.Refresh();
         });
 
         return true;
@@ -188,14 +188,14 @@ internal sealed class Copier
         {
             return DialogResult.Yes;
         }
-        else if (_overwrite == "ask")
+        else if (_overwrite == OverwriteMode.Ask)
         {
             var decision = this.ShowTimedMessageBox($"Overwrite \"{targetFile.FullName}\"\nfrom \"{item.SourceFile.FullName}\"?", "Overwrite?"
                 , MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
 
             return decision;
         }
-        else if (_overwrite == "always")
+        else if (_overwrite == OverwriteMode.Always)
         {
             return DialogResult.Yes;
         }
@@ -207,22 +207,22 @@ internal sealed class Copier
 
     private DialogResult ShowTimedMessageBox(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon)
     {
-        var start = DateTime.UtcNow;
+        var openDialogTimestamp = DateTime.UtcNow;
 
-        var decision = _mainForm.ShowMessageBox(message, title, buttons, icon);
+        var decision = _view.ShowMessageBox(message, title, buttons, icon);
 
-        var span = DateTime.UtcNow.Subtract(start);
+        var dialogTime = DateTime.UtcNow.Subtract(openDialogTimestamp);
 
-        _start = _start.Add(span);
+        _start = _start.Add(dialogTime);
 
         return decision;
     }
 
     private void ExecuteOnUI(Action action)
     {
-        if (_mainForm.InvokeRequired)
+        if (_view.InvokeRequired)
         {
-            _mainForm.Invoke(action);
+            _view.Invoke(action);
         }
         else
         {
@@ -232,13 +232,13 @@ internal sealed class Copier
 
     private void AbortTimerTick(object sender, EventArgs e)
     {
-        if (!_copyThread.IsAlive)
+        if (!_worker.IsAlive)
         {
             _abortTimer.Stop();
 
-            _copyThread = null;
+            _worker = null;
 
-            _mainForm.UpdateProgressBar(-1, DateTime.UtcNow, _divider);
+            _view.UpdateProgressBar(-1, _divider, DateTime.UtcNow);
 
             CopyFinished?.Invoke(this, EventArgs.Empty);
         }

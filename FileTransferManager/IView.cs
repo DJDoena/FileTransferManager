@@ -3,7 +3,7 @@ using System.Windows.Forms;
 
 namespace DoenaSoft.FileTransferManager;
 
-internal interface IMainForm
+internal interface IView
 {
     bool InvokeRequired { get; }
 
@@ -13,7 +13,7 @@ internal interface IMainForm
 
     DialogResult ShowMessageBox(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon);
 
-    void UpdateProgressBar(long bytes, DateTime start, long divider);
+    void UpdateProgressBar(long bytes, long divider, DateTime start);
 
     void Refresh();
 }

@@ -8,7 +8,7 @@ namespace DoenaSoft.FileTransferManager;
 
 internal static class Helper
 {
-    internal static void AddFolder(IList<CopyItem> targetItems, CopyItem sourceFolderItem, bool withSubFolders)
+    internal static IEnumerable<CopyItem> AddFolder(CopyItem sourceFolderItem, bool withSubFolders)
     {
         var option = withSubFolders
             ? SearchOption.AllDirectories
@@ -16,13 +16,14 @@ internal static class Helper
 
         var files = sourceFolderItem.SourceFolder.GetFiles("*.*", option);
 
-        foreach (var file in files)
-        {
-            AddFolderFile(targetItems, sourceFolderItem, file);
-        }
+        var result = files
+            .Select(file => AddFolderFile(sourceFolderItem, file))
+            .ToList();
+
+        return result;
     }
 
-    private static void AddFolderFile(IList<CopyItem> targetItems, CopyItem sourceFolderItem, FileInfo sourceFile)
+    private static CopyItem AddFolderFile(CopyItem sourceFolderItem, FileInfo sourceFile)
     {
         var sourceFolderBase = sourceFolderItem.SourceFolder.Parent; //SourceFolder can never be the drive letter
 
@@ -30,62 +31,72 @@ internal static class Helper
 
         var targetPath = new DirectoryInfo(Path.Combine(sourceFolderItem.TargetFolder.FullName, relativeSourcePath));
 
-        var sourceFileItem = new CopyItem(sourceFile, targetPath);
-
-        targetItems.Add(sourceFileItem);
+        return new CopyItem(sourceFile, targetPath);
     }
 
     internal static long CalculateBytes(IEnumerable<CopyItem> copyItems, bool withSubFolders)
     {
-        long bytes = 0;
-
-        foreach (var item in copyItems)
+        try
         {
-            if (item.SourceFolder?.Exists == true)
+            long bytes = 0;
+
+            foreach (var item in copyItems)
             {
-                var option = withSubFolders
-                    ? SearchOption.AllDirectories
-                    : SearchOption.TopDirectoryOnly;
-
-                var files = item.SourceFolder.GetFiles("*.*", option);
-
-                foreach (var file in files)
+                if (item.SourceFolder?.Exists == true)
                 {
-                    bytes += file.Length;
+                    var option = withSubFolders
+                        ? SearchOption.AllDirectories
+                        : SearchOption.TopDirectoryOnly;
+
+                    var files = item.SourceFolder.GetFiles("*.*", option);
+
+                    foreach (var file in files)
+                    {
+                        bytes += file.Length;
+                    }
+                }
+                else if (item.SourceFile?.Exists == true)
+                {
+                    bytes += item.SourceFile.Length;
                 }
             }
-            else if (item.SourceFile?.Exists == true)
-            {
-                bytes += item.SourceFile.Length;
-            }
-        }
 
-        return (bytes);
+            return bytes;
+        }
+        catch
+        {
+            return -1;
+        }
     }
 
     internal static string FormatBytes(long bytes)
     {
-        decimal roundBytes;
+        decimal? roundBytes;
         string bytesPower;
-        if (bytes / Math.Pow(2, 40) > 1)
+        if (bytes < 0)
+        {
+            roundBytes = null;
+            bytesPower = "? Byte";
+        }
+        else if (bytes / Math.Pow(2, 40) > 1)
         {
             roundBytes = Math.Round(bytes / (decimal)Math.Pow(2, 40), 1, MidpointRounding.AwayFromZero);
-            bytesPower = " TByte";
+            bytesPower = " TiB";
         }
         else if (bytes / Math.Pow(2, 30) > 1)
         {
             roundBytes = Math.Round(bytes / (decimal)(Math.Pow(2, 30)), 1, MidpointRounding.AwayFromZero);
-            bytesPower = " GByte";
+            bytesPower = " GiB";
         }
         else if (bytes / Math.Pow(2, 20) > 1)
         {
             roundBytes = Math.Round(bytes / (decimal)(Math.Pow(2, 20)), 1, MidpointRounding.AwayFromZero);
-            bytesPower = " MByte";
+            bytesPower = " MiB";
         }
         else if (bytes / Math.Pow(2, 10) > 1)
         {
             roundBytes = Math.Round(bytes / (decimal)(Math.Pow(2, 10)), 1, MidpointRounding.AwayFromZero);
-            bytesPower = " KByte";
+            bytesPower = " KiB";
         }
         else
         {
@@ -93,10 +104,10 @@ internal static class Helper
             bytesPower = " Byte";
         }
 
-        return roundBytes + bytesPower;
+        return $"{roundBytes}{bytesPower}";
     }
 
-    internal static (long bytes, long divider) CheckDriveSize(IEnumerable<CopyItem> items, IMainForm form)
+    internal static (long bytes, long divider) CheckDriveSize(IEnumerable<CopyItem> items, IView view)
     {
         var driveGroups = items
             .GroupBy(item => item.TargetFolder.Root.Name.Substring(0, 1))
@@ -117,7 +128,7 @@ internal static class Helper
 
             if (drive.AvailableFreeSpace <= driveBytes)
             {
-                form.ShowMessageBox($"Target is Full!{Environment.NewLine}Available: {Helper.FormatBytes(drive.AvailableFreeSpace)}{Environment.NewLine}Needed: {Helper.FormatBytes(driveBytes)}"
+                view.ShowMessageBox($"Target is Full!{Environment.NewLine}Available: {Helper.FormatBytes(drive.AvailableFreeSpace)}{Environment.NewLine}Needed: {Helper.FormatBytes(driveBytes)}"
                     , "Target Full", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
                 return (-1, 1);

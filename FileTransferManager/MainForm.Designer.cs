@@ -160,9 +160,9 @@
             this.OverwriteComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.OverwriteComboBox.FormattingEnabled = true;
             this.OverwriteComboBox.Items.AddRange(new object[] {
-            "ask",
-            "always",
-            "never"});
+            "Ask",
+            "Always",
+            "Never"});
             this.OverwriteComboBox.Location = new System.Drawing.Point(84, 408);
             this.OverwriteComboBox.MaxDropDownItems = 3;
             this.OverwriteComboBox.Name = "OverwriteComboBox";

@@ -10,7 +10,7 @@ using Microsoft.WindowsAPICodePack.Taskbar;
 
 namespace DoenaSoft.FileTransferManager;
 
-internal partial class MainForm : Form, IMainForm
+internal partial class MainForm : Form, IView
 {
     private string _selectedSourcePath;
 
@@ -21,7 +21,7 @@ internal partial class MainForm : Form, IMainForm
     private IEnumerable<CopyItem> SourceListBoxItems
         => SourceListBox.Items.Cast<CopyItem>().ToList();
 
-    int IMainForm.ProgressBarMax
+    int IView.ProgressBarMax
     {
         get => CopyProgressBar.Maximum;
         set => CopyProgressBar.Maximum = value;
@@ -79,34 +79,46 @@ internal partial class MainForm : Form, IMainForm
 
         if (sourceDialog.ShowDialog() == DialogResult.OK)
         {
-            var selectedPath = sourceDialog.SelectedPath;
-
-            if (!Regex.IsMatch(selectedPath, @"^[a-zA-Z]:\\", RegexOptions.IgnoreCase))
-            {
-                this.ShowMessageBox($"'{selectedPath}' is not valid. Please choose a sub-folder of a letter drive.", "Invalid", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            else
-            {
-                var selectedFolder = new DirectoryInfo(selectedPath);
-
-                if (selectedFolder.FullName.Equals(selectedFolder.Root.FullName))
-                {
-                    this.ShowMessageBox($"'{selectedPath}' is not valid. Please choose a sub-folder of a letter drive.", "Invalid", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else if (this.ShowTargetDialog(out var targetFolder))
-                {
-                    this.AddFolder(targetFolder, sourceDialog.SelectedPath);
-
-                    _selectedSourcePath = sourceDialog.SelectedPath;
-                }
-            }
+            this.TryAddFolder(sourceDialog.SelectedPath);
         }
     }
 
-    private void AddFolder(DirectoryInfo targetFolder, string sourceFolderName)
+    private void TryAddFolder(string selectedPath)
     {
-        var sourceFolder = new DirectoryInfo(sourceFolderName);
+        if (IsOnLetterDrive(selectedPath))
+        {
+            var selectedFolder = new DirectoryInfo(selectedPath);
 
+            if (!selectedFolder.FullName.Equals(selectedFolder.Root.FullName))
+            {
+                if (this.ShowTargetDialog(out var targetFolder))
+                {
+                    this.AddFolder(targetFolder, selectedFolder);
+
+                    _selectedSourcePath = selectedFolder.FullName;
+                }
+            }
+            else
+            {
+                this.ShowNotOnLetterDriveErrror(selectedPath);
+            }
+        }
+        else
+        {
+            this.ShowNotOnLetterDriveErrror(selectedPath);
+        }
+    }
+
+    private void ShowNotOnLetterDriveErrror(string selectedPath)
+        => this.ShowMessageBox($"'{selectedPath}' is not valid.\r\nPlease choose file / folder on a letter drive.", "Invalid", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+    private static bool IsOnLetterDrive(string selectedPath)
+    {
+        return Regex.IsMatch(selectedPath, @"^[a-zA-Z]:\\", RegexOptions.IgnoreCase);
+    }
+
+    private void AddFolder(DirectoryInfo targetFolder, DirectoryInfo sourceFolder)
+    {
         SourceListBox.Items.Add(new CopyItem(sourceFolder, targetFolder));
 
         this.FormatBytes();
@@ -161,12 +173,28 @@ internal partial class MainForm : Form, IMainForm
             sourceDialog.RestoreDirectory = true;
         }
 
-        if (sourceDialog.ShowDialog() == DialogResult.OK
-            && this.ShowTargetDialog(out var targetFolder))
+        if (sourceDialog.ShowDialog() == DialogResult.OK)
         {
-            this.AddFiles(targetFolder, sourceDialog.FileNames);
+            this.TryAddFiles(sourceDialog.FileNames);
+        }
+    }
 
-            _selectedSourcePath = sourceDialog.InitialDirectory;
+    private void TryAddFiles(string[] fileNames)
+    {
+        var fileName = fileNames.First();
+
+        if (IsOnLetterDrive(fileName))
+        {
+            if (this.ShowTargetDialog(out var targetFolder))
+            {
+                this.AddFiles(targetFolder, fileNames);
+
+                _selectedSourcePath = (new FileInfo(fileName)).DirectoryName;
+            }
+        }
+        else
+        {
+            this.ShowNotOnLetterDriveErrror(fileName);
         }
     }
 
@@ -194,21 +222,21 @@ internal partial class MainForm : Form, IMainForm
 
         var targetItems = new List<CopyItem>();
 
-        foreach (var sourceItems in this.SourceListBoxItems)
+        foreach (var sourceItem in this.SourceListBoxItems)
         {
-            if (sourceItems.SourceFolder?.Exists == true)
+            if (sourceItem.SourceFolder?.Exists == true)
             {
-                Helper.AddFolder(targetItems, sourceItems, WithSubFoldersCheckBox.Checked);
+                var folderItems = Helper.AddFolder(sourceItem, WithSubFoldersCheckBox.Checked);
+
+                targetItems.AddRange(folderItems);
             }
-            else if (sourceItems.SourceFile?.Exists == true)
+            else if (sourceItem.SourceFile?.Exists == true)
             {
-                targetItems.Add(sourceItems);
+                targetItems.Add(sourceItem);
             }
             else
             {
-                this.ShowMessageBox("Something is weird about\n" + sourceItems, "?!?", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
-                return;
+                this.ShowMessageBox($"Something is weird about\r\n{sourceItem}", "?!?", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -223,7 +251,9 @@ internal partial class MainForm : Form, IMainForm
 
         targetItems.Sort((left, right) => left.SourceFile.FullName.CompareTo(right.SourceFile.FullName));
 
-        _copier = new Copier(targetItems.AsReadOnly(), OverwriteComboBox.Text, divider, this);
+        var overwrite = (OverwriteMode)Enum.Parse(typeof(OverwriteMode), OverwriteComboBox.Text);
+
+        _copier = new Copier(targetItems.AsReadOnly(), overwrite, divider, this);
 
         _copier.CopyFinished += this.OnMainFormCopyFinished;
 
@@ -290,7 +320,7 @@ internal partial class MainForm : Form, IMainForm
         this.FormatBytes();
     }
 
-    public void UpdateProgressBar(long bytes, DateTime start, long divider)
+    public void UpdateProgressBar(long bytes, long divider, DateTime start)
     {
         if (bytes == -1)
         {
@@ -316,7 +346,7 @@ internal partial class MainForm : Form, IMainForm
 
             if (CopyProgressBar.Value != 0)
             {
-                this.SetRemaingLabelText(start, bytes);
+                this.SetRemaingLabelText(bytes, start);
             }
         }
 
@@ -324,7 +354,7 @@ internal partial class MainForm : Form, IMainForm
         CopyProgressBar.Refresh();
     }
 
-    private void SetRemaingLabelText(DateTime start, long bytes)
+    private void SetRemaingLabelText(long bytes, DateTime start)
     {
         var span = DateTime.UtcNow.Subtract(start);
 
@@ -409,7 +439,7 @@ internal partial class MainForm : Form, IMainForm
                     }
                     else if (Directory.Exists(itemParts[0]))
                     {
-                        this.AddFolder(new DirectoryInfo(itemParts[1]), itemParts[0]);
+                        this.AddFolder(new DirectoryInfo(itemParts[1]), new DirectoryInfo(itemParts[0]));
                     }
                     else if (File.Exists(itemParts[0]))
                     {
