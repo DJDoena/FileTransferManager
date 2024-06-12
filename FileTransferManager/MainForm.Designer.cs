@@ -35,7 +35,7 @@
             this.RemoveEntryButton = new System.Windows.Forms.Button();
             this.WithSubFoldersCheckBox = new System.Windows.Forms.CheckBox();
             this.CopyButton = new System.Windows.Forms.Button();
-            this.ProgressBar = new System.Windows.Forms.ProgressBar();
+            this.CopyProgressBar = new System.Windows.Forms.ProgressBar();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.OverwriteComboBox = new System.Windows.Forms.ComboBox();
@@ -127,12 +127,12 @@
             // 
             // ProgressBar
             // 
-            this.ProgressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            this.CopyProgressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.ProgressBar.Location = new System.Drawing.Point(84, 436);
-            this.ProgressBar.Name = "ProgressBar";
-            this.ProgressBar.Size = new System.Drawing.Size(525, 23);
-            this.ProgressBar.TabIndex = 10;
+            this.CopyProgressBar.Location = new System.Drawing.Point(84, 436);
+            this.CopyProgressBar.Name = "ProgressBar";
+            this.CopyProgressBar.Size = new System.Drawing.Size(525, 23);
+            this.CopyProgressBar.TabIndex = 10;
             // 
             // label2
             // 
@@ -239,7 +239,7 @@
             this.Controls.Add(this.OverwriteComboBox);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
-            this.Controls.Add(this.ProgressBar);
+            this.Controls.Add(this.CopyProgressBar);
             this.Controls.Add(this.CopyButton);
             this.Controls.Add(this.WithSubFoldersCheckBox);
             this.Controls.Add(this.RemoveEntryButton);
@@ -264,7 +264,7 @@
         private System.Windows.Forms.Button RemoveEntryButton;
         private System.Windows.Forms.CheckBox WithSubFoldersCheckBox;
         private System.Windows.Forms.Button CopyButton;
-        private System.Windows.Forms.ProgressBar ProgressBar;
+        private System.Windows.Forms.ProgressBar CopyProgressBar;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.ComboBox OverwriteComboBox;
