@@ -249,15 +249,15 @@ internal partial class MainForm : Form, IView
 
         CopyProgressBar.Maximum = (int)(allBytes / divider);
 
+        this.SwitchUI(false);
+
         targetItems.Sort((left, right) => left.SourceFile.FullName.CompareTo(right.SourceFile.FullName));
 
         var overwrite = (OverwriteMode)Enum.Parse(typeof(OverwriteMode), OverwriteComboBox.Text);
 
         _copier = new Copier(targetItems.AsReadOnly(), overwrite, divider, this);
 
-        _copier.CopyFinished += this.OnMainFormCopyFinished;
-
-        this.SwitchUI(false);
+        _copier.CopyFinished += this.OnCopyFinished;
 
         _copier.Start();
     }
@@ -292,11 +292,13 @@ internal partial class MainForm : Form, IView
         AbortButton.Visible = inverse;
     }
 
-    private void OnMainFormCopyFinished(object sender, EventArgs e)
+    private void OnCopyFinished(object sender, EventArgs e)
     {
-        this.SwitchUI(true);
+        _copier.CopyFinished -= this.OnCopyFinished;
 
-        _copier.CopyFinished -= this.OnMainFormCopyFinished;
+        _copier = null;
+
+        this.SwitchUI(true);
     }
 
     public DialogResult ShowMessageBox(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon)
