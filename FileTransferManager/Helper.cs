@@ -155,5 +155,4 @@ internal static class Helper
 
         return (allBytes, divider);
     }
-
 }
