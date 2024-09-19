@@ -1,19 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net472</TargetFramework>
-		<OutputType>WinExe</OutputType>
-		<Platforms>x64</Platforms>
-		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-		<RootNamespace>DoenaSoft.FileTransferManager</RootNamespace>
 		<AssemblyName>FileTransferManager</AssemblyName>
-		<UseWindowsForms>true</UseWindowsForms>
+		<RootNamespace>DoenaSoft.FileTransferManager</RootNamespace>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net472</TargetFramework>
+		<Platforms>x64</Platforms>
 		<ApplicationIcon>djdsoft.ico</ApplicationIcon>
-		<Version>$([System.DateTime]::Now.ToString("yyyy.MM.dd.HHmm"))</Version>
-		<FileVersion>$([System.DateTime]::Now.ToString("yyyy.MM.dd.HHmm"))</FileVersion>
+		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
 		<ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<LangVersion>10.0</LangVersion>
+		<Version>$([System.DateTime]::Now.ToString("yyyy.MM.dd.HHmm"))</Version>
+		<FileVersion>$([System.DateTime]::Now.ToString("yyyy.MM.dd.HHmm"))</FileVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
