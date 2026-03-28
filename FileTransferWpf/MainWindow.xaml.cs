@@ -8,60 +8,39 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using DoenaSoft.AbstractionLayer.IOServices;
 using DoenaSoft.AbstractionLayer.UIServices;
-using DoenaSoft.FileTransferManager;
 
 namespace DoenaSoft.FileTransferManager;
 
 public partial class MainWindow : Window, IView
 {
     private readonly IIOServices _ioServices;
+
     private readonly IUIServices _uiServices;
-    private readonly MainController _controller;
+
+    private readonly MainWindowController _controller;
+
     private Copier _copier;
 
-    public MainWindow(IIOServices ioServices, IUIServices uiServices)
+    public MainWindow(IIOServices ioServices
+        , IUIServices uiServices)
     {
         _ioServices = ioServices;
         _uiServices = uiServices;
-        _controller = new MainController(_ioServices, _uiServices);
+
+        _controller = new MainWindowController(_ioServices, _uiServices);
+
+        this.InitializeComponent();
 
         this.Icon = ToImageSource(FileTransferManager.Resources.djdsoft);
-
-        InitializeComponent();
-        // ensure UI parity with WinForms: add overwrite combo if XAML doesn't contain one
-        try
-        {
-            var root = this.Content as Grid;
-
-            if (root != null)
-            {
-                var topPanel = root.Children.OfType<StackPanel>().FirstOrDefault();
-
-                if (topPanel != null && topPanel.Children.OfType<ComboBox>().All(c => c.Name != "OverwriteComboBox"))
-                {
-                    var combo = new ComboBox() { Name = "OverwriteComboBox", Width = 120, Margin = new Thickness(8, 0, 0, 0), SelectedIndex = 0 };
-                    combo.Items.Add(new ComboBoxItem() { Content = "Ask" });
-                    combo.Items.Add(new ComboBoxItem() { Content = "Always" });
-                    combo.Items.Add(new ComboBoxItem() { Content = "Never" });
-
-                    // Register the name so FindName works
-                    try { this.RegisterName(combo.Name, combo); } catch { }
-
-                    topPanel.Children.Add(combo);
-                }
-            }
-        }
-        catch
-        {
-            // ignore any UI composition errors
-        }
 
         this.Title += " " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
     }
 
-    private IEnumerable<CopyItem> SourceListBoxItems => SourceListBox.Items.Cast<CopyItem>().ToList();
+    private IEnumerable<CopyItem> SourceListBoxItems
+        => [.. SourceListBox.Items.Cast<CopyItem>()];
 
-    public bool InvokeRequired => false;
+    public bool InvokeRequired
+        => !this.Dispatcher.CheckAccess();
 
     public int ProgressBarMax
     {
@@ -71,20 +50,30 @@ public partial class MainWindow : Window, IView
 
     public object Invoke(Delegate method)
     {
-        return this.Dispatcher.Invoke(method);
+        // If we're already on the UI thread invoke directly to avoid unnecessary
+        // cross-thread marshalling. Otherwise dispatch to the UI thread.
+        var result = this.Dispatcher.CheckAccess()
+            ? method.DynamicInvoke()
+            : this.Dispatcher.Invoke(method);
+
+        return result;
     }
 
-    public Result ShowMessageBox(string message, string title, Buttons buttons, Icon icon)
-    {
-        return _uiServices.ShowMessageBox(message, title, buttons, icon);
-    }
+    public Result ShowMessageBox(string message
+        , string title
+        , Buttons buttons, Icon icon)
+        => _uiServices.ShowMessageBox(message, title, buttons, icon);
 
-    public void UpdateProgressBar(long bytes, long divider, DateTime start)
+    public void UpdateProgressBar(long bytes
+        , long divider
+        , DateTime start)
     {
         if (bytes == -1)
         {
             CopyProgressBar.Value = CopyProgressBar.Maximum;
+
             RemainingLabel.Content = ".....";
+
             return;
         }
 
@@ -95,12 +84,13 @@ public partial class MainWindow : Window, IView
 
     public void Refresh()
     {
-        // WPF doesn't have a direct Refresh; force layout update on the dispatcher
-        this.Dispatcher.Invoke(() =>
+        Action refresh = () =>
         {
             this.InvalidateVisual();
             this.UpdateLayout();
-        });
+        };
+
+        this.Invoke(refresh);
     }
 
     private void OnAddFolderClick(object sender, RoutedEventArgs e)
@@ -120,7 +110,7 @@ public partial class MainWindow : Window, IView
             if (_controller.TryCreateCopyItemFromFolder(selected, out var item))
             {
                 SourceListBox.Items.Add(item);
-                FormatBytes();
+                this.FormatBytes();
             }
         }
     }
@@ -146,7 +136,7 @@ public partial class MainWindow : Window, IView
                     SourceListBox.Items.Add(it);
                 }
 
-                FormatBytes();
+                this.FormatBytes();
             }
         }
     }
@@ -155,46 +145,54 @@ public partial class MainWindow : Window, IView
     {
         if (SourceListBox.SelectedIndex >= 0)
         {
-            var idx = SourceListBox.SelectedIndex;
-            SourceListBox.Items.RemoveAt(idx);
-            if (SourceListBox.Items.Count > idx)
-                SourceListBox.SelectedIndex = idx;
-            else if (SourceListBox.Items.Count > 0)
-                SourceListBox.SelectedIndex = SourceListBox.Items.Count - 1;
+            var index = SourceListBox.SelectedIndex;
 
-            FormatBytes();
+            SourceListBox.Items.RemoveAt(index);
+
+            if (SourceListBox.Items.Count > index)
+            {
+                SourceListBox.SelectedIndex = index;
+            }
+            else if (SourceListBox.Items.Count > 0)
+            {
+                SourceListBox.SelectedIndex = SourceListBox.Items.Count - 1;
+            }
+
+            this.FormatBytes();
         }
     }
 
     private void OnClearListClick(object sender, RoutedEventArgs e)
     {
         SourceListBox.Items.Clear();
-        FormatBytes();
+
+        this.FormatBytes();
     }
 
     private void OnWithSubFoldersCheckedChanged(object sender, RoutedEventArgs e)
     {
-        FormatBytes();
+        this.FormatBytes();
     }
 
     private void OnCopyClick(object sender, RoutedEventArgs e)
     {
         var targetItems = new List<CopyItem>();
 
-        foreach (var sourceItem in SourceListBoxItems)
+        foreach (var sourceItem in this.SourceListBoxItems)
         {
             if (sourceItem.SourceFolder?.Exists == true)
             {
                 var folderItems = Helper.AddFolder(sourceItem, WithSubFoldersCheckBox.IsChecked == true);
+
                 targetItems.AddRange(folderItems);
             }
             else if (sourceItem.SourceFile?.Exists == true)
             {
                 targetItems.Add(sourceItem);
             }
-            else
+                else
             {
-                ShowMessageBox($"Something is weird about\r\n{sourceItem}", "?!?", Buttons.OK, DoenaSoft.AbstractionLayer.UIServices.Icon.Error);
+                this.ShowMessageBox($"Something is weird about{Environment.NewLine}{sourceItem}", "?!?", Buttons.OK, DoenaSoft.AbstractionLayer.UIServices.Icon.Error);
             }
         }
 
@@ -208,13 +206,11 @@ public partial class MainWindow : Window, IView
         targetItems.Sort((l, r) => l.SourceFile.FullName.CompareTo(r.SourceFile.FullName));
 
         // determine overwrite mode from UI (OverwriteComboBox)
-        OverwriteMode overwrite = OverwriteMode.Ask;
+        var overwrite = OverwriteMode.Ask;
 
         try
         {
-            ComboBox overwriteCb = this.FindName("OverwriteComboBox") as ComboBox;
-
-            if (overwriteCb == null)
+            if (this.FindName("OverwriteComboBox") is not ComboBox overwriteCb)
             {
                 var root = this.Content as Grid;
                 overwriteCb = root?.Children.OfType<StackPanel>().FirstOrDefault()?.Children.OfType<ComboBox>().FirstOrDefault(c => c.Name == "OverwriteComboBox");
@@ -241,7 +237,7 @@ public partial class MainWindow : Window, IView
 
         _copier = new Copier(targetItems.AsReadOnly(), overwrite, divider, this, _ioServices);
 
-        _copier.CopyFinished += OnCopyFinished;
+        _copier.CopyFinished += this.OnCopyFinished;
 
         _copier.Start();
     }
@@ -253,24 +249,27 @@ public partial class MainWindow : Window, IView
 
     private void OnCopyFinished(object sender, EventArgs e)
     {
-        _copier.CopyFinished -= OnCopyFinished;
+        _copier.CopyFinished -= this.OnCopyFinished;
         _copier = null;
     }
 
     private void FormatBytes()
     {
         SizeLabel.Content = SourceListBox.Items.Count > 0
-            ? Helper.FormatBytes(Helper.CalculateBytes(SourceListBoxItems, WithSubFoldersCheckBox.IsChecked == true))
+            ? Helper.FormatBytes(Helper.CalculateBytes(this.SourceListBoxItems, WithSubFoldersCheckBox.IsChecked == true))
             : "0 Byte";
     }
 
     private static ImageSource ToImageSource(System.Drawing.Icon icon)
     {
-        ImageSource imageSource = Imaging.CreateBitmapSourceFromHIcon(
+        var bmpSrc = Imaging.CreateBitmapSourceFromHIcon(
             icon.Handle,
             Int32Rect.Empty,
             BitmapSizeOptions.FromEmptyOptions());
 
-        return imageSource;
+        // Freeze so the ImageSource is immutable and can be used across threads
+        bmpSrc.Freeze();
+
+        return bmpSrc;
     }
 }

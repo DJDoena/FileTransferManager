@@ -7,7 +7,7 @@ using DoenaSoft.AbstractionLayer.UIServices;
 
 namespace DoenaSoft.FileTransferManager;
 
-public sealed class MainController
+public sealed class MainWindowController
 {
     private readonly IIOServices _ioServices;
 
@@ -17,22 +17,24 @@ public sealed class MainController
 
     private IFolderInfo _selectedTargetPath;
 
-    public MainController(IIOServices ioServices, IUIServices uiServices)
+    public MainWindowController(IIOServices ioServices
+        , IUIServices uiServices)
     {
         _ioServices = ioServices ?? throw new ArgumentNullException(nameof(ioServices));
         _uiServices = uiServices ?? throw new ArgumentNullException(nameof(uiServices));
     }
 
-    public IFolderInfo SelectedSourcePath => _selectedSourcePath;
+    public IFolderInfo SelectedSourcePath
+        => _selectedSourcePath;
 
-    public IFolderInfo SelectedTargetPath => _selectedTargetPath;
+    public IFolderInfo SelectedTargetPath
+        => _selectedTargetPath;
 
     public static bool IsOnLetterDrive(string selectedPath)
-    {
-        return Regex.IsMatch(selectedPath, @"^[a-zA-Z]:\\", RegexOptions.IgnoreCase);
-    }
+        => Regex.IsMatch(selectedPath, @"^[a-zA-Z]:\\", RegexOptions.IgnoreCase);
 
-    public bool TryCreateCopyItemFromFolder(string selectedPath, out CopyItem item)
+    public bool TryCreateCopyItemFromFolder(string selectedPath
+        , out CopyItem item)
     {
         item = null;
 
@@ -60,7 +62,8 @@ public sealed class MainController
         return true;
     }
 
-    public bool TryCreateCopyItemsFromFiles(string[] fileNames, out List<CopyItem> items)
+    public bool TryCreateCopyItemsFromFiles(string[] fileNames
+        , out List<CopyItem> items)
     {
         items = null;
 

@@ -14,7 +14,7 @@ namespace DoenaSoft.FileTransferManager;
 
 internal partial class MainForm : Form, IView
 {
-    private MainController _controller;
+    private MainWindowController _controller;
 
     private Copier _copier;
 
@@ -37,7 +37,7 @@ internal partial class MainForm : Form, IView
         _ioServices = iOServices;
         _uiServices = formUIServices;
 
-        _controller = new MainController(_ioServices, _uiServices);
+        _controller = new MainWindowController(_ioServices, _uiServices);
 
         this.InitializeComponent();
 
@@ -98,7 +98,7 @@ internal partial class MainForm : Form, IView
     }
 
     private void ShowNotOnLetterDriveErrror(string selectedPath)
-        => this.ShowMessageBox($"'{selectedPath}' is not valid.\r\nPlease choose file / folder on a letter drive.", "Invalid", Buttons.OK, AbstractionLayer.UIServices.Icon.Warning);
+        => this.ShowMessageBox($"'{selectedPath}' is not valid.{Environment.NewLine}Please choose file / folder on a letter drive.", "Invalid", Buttons.OK, AbstractionLayer.UIServices.Icon.Warning);
 
     // Drive checks and target dialog moved to MainController
 
@@ -141,7 +141,7 @@ internal partial class MainForm : Form, IView
 
             this.FormatBytes();
         }
-        else if (!MainController.IsOnLetterDrive(fileName))
+        else if (!MainWindowController.IsOnLetterDrive(fileName))
         {
             this.ShowNotOnLetterDriveErrror(fileName);
         }
@@ -185,7 +185,7 @@ internal partial class MainForm : Form, IView
             }
             else
             {
-                this.ShowMessageBox($"Something is weird about\r\n{sourceItem}", "?!?", Buttons.OK, AbstractionLayer.UIServices.Icon.Error);
+                this.ShowMessageBox($"Something is weird about{Environment.NewLine}{sourceItem}", "?!?", Buttons.OK, AbstractionLayer.UIServices.Icon.Error);
             }
         }
 

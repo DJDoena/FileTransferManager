@@ -10,6 +10,18 @@ public sealed class CopyItem
 
     public IFolderInfo TargetFolder { get; }
 
+    public string DisplayText
+    {
+        get
+        {
+            var source = this.SourceFolder != null
+                ? this.SourceFolder.FullName
+                : this.SourceFile.FullName;
+
+            return $"{source} → {this.TargetFolder.FullName}";
+        }
+    }
+
     public CopyItem(IFolderInfo sourceFolder, IFolderInfo targetFolder)
     {
         this.SourceFolder = sourceFolder;
@@ -25,11 +37,5 @@ public sealed class CopyItem
     }
 
     public override string ToString()
-    {
-        var source = this.SourceFolder != null
-            ? this.SourceFolder.FullName
-            : this.SourceFile.FullName;
-
-        return $"{source} --> {this.TargetFolder.FullName}";
-    }
+        => this.DisplayText;
 }

@@ -1,14 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-
-
-
 		<AssemblyName>FileTransferManager</AssemblyName>
 		<RootNamespace>DoenaSoft.FileTransferManager</RootNamespace>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net472</TargetFramework>
-		<LangVersion>14.0</LangVersion>
+		<LangVersion>latest</LangVersion>
 		<ApplicationIcon>..\FileTransferManager\djdsoft.ico</ApplicationIcon>
 		<UseWPF>true</UseWPF>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
@@ -26,18 +23,18 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="Resources.Designer.cs">
-	    <DesignTime>True</DesignTime>
-	    <AutoGen>True</AutoGen>
-	    <DependentUpon>Resources.resx</DependentUpon>
-	  </Compile>
+		<Compile Update="Resources.Designer.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Update="Resources.resx">
-	    <Generator>ResXFileCodeGenerator</Generator>
-	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-	  </EmbeddedResource>
+		<EmbeddedResource Update="Resources.resx">
+			<Generator>ResXFileCodeGenerator</Generator>
+			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
 	</ItemGroup>
 
 </Project>

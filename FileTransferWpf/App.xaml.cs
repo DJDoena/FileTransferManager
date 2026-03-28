@@ -10,11 +10,8 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        var io = new IOServices();
-        var ui = new WindowUIServices();
+        var mainWindow = new MainWindow(new IOServices(), new WindowUIServices());
 
-        var wnd = new MainWindow(io, ui);
-
-        wnd.Show();
+        mainWindow.Show();
     }
 }

@@ -5,7 +5,7 @@
 		<RootNamespace>DoenaSoft.FileTransferManager</RootNamespace>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net472</TargetFramework>
-		<LangVersion>14.0</LangVersion>
+		<LangVersion>latest</LangVersion>
 		<ApplicationIcon>djdsoft.ico</ApplicationIcon>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
