@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	  <AssemblyName>FileTransferLib</AssemblyName>
+	  <RootNamespace>DoenaSoft.FileTransferManager</RootNamespace>
+	  <OutputType>Library</OutputType>
+	  <TargetFramework>net472</TargetFramework>
+	  <LangVersion>14.0</LangVersion>
+	  <Version>$([System.DateTime]::Now.ToString("yyyy.MM.dd.HHmm"))</Version>
+	  <FileVersion>$([System.DateTime]::Now.ToString("yyyy.MM.dd.HHmm"))</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DoenaSoft.AbstractionLayer.IO" Version="3.0.1" />
+    <PackageReference Include="DoenaSoft.AbstractionLayer.UI" Version="1.0.6" />
+  </ItemGroup>
+
+</Project>

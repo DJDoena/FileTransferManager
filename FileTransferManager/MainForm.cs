@@ -6,17 +6,21 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using DoenaSoft.AbstractionLayer.IOServices;
+using DoenaSoft.AbstractionLayer.UIServices;
 using Microsoft.WindowsAPICodePack.Taskbar;
 
 namespace DoenaSoft.FileTransferManager;
 
 internal partial class MainForm : Form, IView
 {
-    private string _selectedSourcePath;
-
-    private string _selectedTargetPath;
+    private MainController _controller;
 
     private Copier _copier;
+
+    private readonly IIOServices _ioServices;
+
+    private readonly IUIServices _uiServices;
 
     private IEnumerable<CopyItem> SourceListBoxItems
         => SourceListBox.Items.Cast<CopyItem>().ToList();
@@ -27,11 +31,13 @@ internal partial class MainForm : Form, IView
         set => CopyProgressBar.Maximum = value;
     }
 
-    public MainForm()
+    public MainForm(IIOServices iOServices
+        , IUIServices formUIServices)
     {
-        _selectedSourcePath = null;
+        _ioServices = iOServices;
+        _uiServices = formUIServices;
 
-        _selectedTargetPath = null;
+        _controller = new MainController(_ioServices, _uiServices);
 
         this.InitializeComponent();
 
@@ -63,45 +69,27 @@ internal partial class MainForm : Form, IView
 
     private void OnAddFolderButtonClick(object sender, EventArgs e)
     {
-        using var sourceDialog = new FolderBrowserDialog();
-
-        sourceDialog.ShowNewFolderButton = false;
-        sourceDialog.Description = "Select Source Folder to Copy";
-
-        if (Directory.Exists(_selectedSourcePath))
+        var options = new FolderBrowserDialogOptions()
         {
-            sourceDialog.SelectedPath = _selectedSourcePath;
-        }
-        else
-        {
-            sourceDialog.RootFolder = Environment.SpecialFolder.MyComputer;
-        }
+            ShowNewFolderButton = false,
+            Description = "Select Source Folder to Copy",
+            SelectedPath = Directory.Exists(_controller.SelectedSourcePath?.FullName)
+                ? _controller.SelectedSourcePath.FullName
+                : null,
+            RootFolder = Environment.SpecialFolder.MyComputer
+        };
 
-        if (sourceDialog.ShowDialog() == DialogResult.OK)
+        if (_uiServices.ShowFolderBrowserDialog(options, out var selectedFolder))
         {
-            this.TryAddFolder(sourceDialog.SelectedPath);
+            this.TryAddFolder(selectedFolder);
         }
     }
 
     private void TryAddFolder(string selectedPath)
     {
-        if (IsOnLetterDrive(selectedPath))
+        if (_controller.TryCreateCopyItemFromFolder(selectedPath, out var item))
         {
-            var selectedFolder = new DirectoryInfo(selectedPath);
-
-            if (!selectedFolder.FullName.Equals(selectedFolder.Root.FullName))
-            {
-                if (this.ShowTargetDialog(out var targetFolder))
-                {
-                    this.AddFolder(targetFolder, selectedFolder);
-
-                    _selectedSourcePath = selectedFolder.FullName;
-                }
-            }
-            else
-            {
-                this.ShowNotOnLetterDriveErrror(selectedPath);
-            }
+            this.AddFolder(item.TargetFolder, item.SourceFolder);
         }
         else
         {
@@ -110,72 +98,33 @@ internal partial class MainForm : Form, IView
     }
 
     private void ShowNotOnLetterDriveErrror(string selectedPath)
-        => this.ShowMessageBox($"'{selectedPath}' is not valid.\r\nPlease choose file / folder on a letter drive.", "Invalid", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        => this.ShowMessageBox($"'{selectedPath}' is not valid.\r\nPlease choose file / folder on a letter drive.", "Invalid", Buttons.OK, AbstractionLayer.UIServices.Icon.Warning);
 
-    private static bool IsOnLetterDrive(string selectedPath)
-    {
-        return Regex.IsMatch(selectedPath, @"^[a-zA-Z]:\\", RegexOptions.IgnoreCase);
-    }
+    // Drive checks and target dialog moved to MainController
 
-    private void AddFolder(DirectoryInfo targetFolder, DirectoryInfo sourceFolder)
+    private void AddFolder(IFolderInfo targetFolder, IFolderInfo sourceFolder)
     {
         SourceListBox.Items.Add(new CopyItem(sourceFolder, targetFolder));
 
         this.FormatBytes();
     }
-
-    private bool ShowTargetDialog(out DirectoryInfo targetFolder)
-    {
-        using var targetDialog = new FolderBrowserDialog();
-
-        targetDialog.ShowNewFolderButton = true;
-        targetDialog.Description = "Select Target Folder to Copy";
-
-        if (Directory.Exists(_selectedTargetPath))
-        {
-            targetDialog.SelectedPath = _selectedTargetPath;
-        }
-        else
-        {
-            targetDialog.RootFolder = Environment.SpecialFolder.MyComputer;
-        }
-
-        if (targetDialog.ShowDialog() == DialogResult.OK)
-        {
-            targetFolder = new DirectoryInfo(targetDialog.SelectedPath);
-
-            _selectedTargetPath = targetDialog.SelectedPath;
-
-            return true;
-        }
-        else
-        {
-            targetFolder = null;
-
-            return false;
-        }
-    }
+    // Target folder selection is handled by MainController
 
     private void OnAddFileButtonClick(object sender, EventArgs e)
     {
-        using var sourceDialog = new OpenFileDialog();
-
-        sourceDialog.CheckFileExists = true;
-        sourceDialog.Multiselect = true;
-        sourceDialog.Title = "Select File(s) to Copy";
-
-        if (Directory.Exists(_selectedSourcePath))
+        var options = new OpenFileDialogOptions()
         {
-            sourceDialog.InitialDirectory = _selectedSourcePath;
-        }
-        else
-        {
-            sourceDialog.RestoreDirectory = true;
-        }
+            CheckFileExists = true,
+            Title = "Select File(s) to Copy",
+            InitialFolder = Directory.Exists(_controller.SelectedSourcePath?.FullName)
+                ? _controller.SelectedSourcePath.FullName
+                : null,
+            RestoreFolder = true,
+        };
 
-        if (sourceDialog.ShowDialog() == DialogResult.OK)
+        if (_uiServices.ShowOpenFileDialog(options, out string[] fileNames))
         {
-            this.TryAddFiles(sourceDialog.FileNames);
+            this.TryAddFiles(fileNames);
         }
     }
 
@@ -183,26 +132,26 @@ internal partial class MainForm : Form, IView
     {
         var fileName = fileNames.First();
 
-        if (IsOnLetterDrive(fileName))
+        if (_controller.TryCreateCopyItemsFromFiles(fileNames, out var items))
         {
-            if (this.ShowTargetDialog(out var targetFolder))
+            foreach (var item in items)
             {
-                this.AddFiles(targetFolder, fileNames);
-
-                _selectedSourcePath = (new FileInfo(fileName)).DirectoryName;
+                SourceListBox.Items.Add(item);
             }
+
+            this.FormatBytes();
         }
-        else
+        else if (!MainController.IsOnLetterDrive(fileName))
         {
             this.ShowNotOnLetterDriveErrror(fileName);
         }
     }
 
-    private void AddFiles(DirectoryInfo targetFolder, params string[] fileNames)
+    private void AddFiles(IFolderInfo targetFolder, params string[] fileNames)
     {
         foreach (var fileName in fileNames)
         {
-            var sourceFile = new FileInfo(fileName);
+            var sourceFile = _ioServices.GetFile(fileName);
 
             SourceListBox.Items.Add(new CopyItem(sourceFile, targetFolder));
         }
@@ -236,11 +185,11 @@ internal partial class MainForm : Form, IView
             }
             else
             {
-                this.ShowMessageBox($"Something is weird about\r\n{sourceItem}", "?!?", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.ShowMessageBox($"Something is weird about\r\n{sourceItem}", "?!?", Buttons.OK, AbstractionLayer.UIServices.Icon.Error);
             }
         }
 
-        var (allBytes, divider) = Helper.CheckDriveSize(targetItems, this);
+        var (allBytes, divider) = Helper.CheckDriveSize(targetItems, this, _ioServices);
 
         if (allBytes <= 0)
         {
@@ -255,7 +204,7 @@ internal partial class MainForm : Form, IView
 
         var overwrite = (OverwriteMode)Enum.Parse(typeof(OverwriteMode), OverwriteComboBox.Text);
 
-        _copier = new Copier(targetItems.AsReadOnly(), overwrite, divider, this);
+        _copier = new Copier(targetItems.AsReadOnly(), overwrite, divider, this, _ioServices);
 
         _copier.CopyFinished += this.OnCopyFinished;
 
@@ -301,12 +250,12 @@ internal partial class MainForm : Form, IView
         this.SwitchUI(true);
     }
 
-    public DialogResult ShowMessageBox(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon)
+    public Result ShowMessageBox(string message, string title, Buttons buttons, Icon icon)
     {
-        var func = new Func<DialogResult>(() => MessageBox.Show(this, message, title, buttons, icon));
+        var func = new Func<Result>(() => _uiServices.ShowMessageBox(message, title, buttons, icon));
 
         var result = this.InvokeRequired
-            ? (DialogResult)this.Invoke(func)
+            ? (Result)this.Invoke(func)
             : func();
 
         return result;
@@ -441,17 +390,17 @@ internal partial class MainForm : Form, IView
                     }
                     else if (Directory.Exists(itemParts[0]))
                     {
-                        this.AddFolder(new DirectoryInfo(itemParts[1]), new DirectoryInfo(itemParts[0]));
+                        this.AddFolder(_ioServices.GetFolder(itemParts[1]), _ioServices.GetFolder(itemParts[0]));
                     }
                     else if (File.Exists(itemParts[0]))
                     {
-                        this.AddFiles(new DirectoryInfo(itemParts[1]), itemParts[0]);
+                        this.AddFiles(_ioServices.GetFolder(itemParts[1]), itemParts[0]);
                     }
                 }
             }
             catch (Exception ex)
             {
-                this.ShowMessageBox(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.ShowMessageBox(ex.Message, "Error", Buttons.OK, AbstractionLayer.UIServices.Icon.Error);
             }
         }
     }

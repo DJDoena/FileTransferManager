@@ -1,27 +1,28 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+
+
+
 		<AssemblyName>FileTransferManager</AssemblyName>
 		<RootNamespace>DoenaSoft.FileTransferManager</RootNamespace>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net472</TargetFramework>
 		<LangVersion>14.0</LangVersion>
-		<ApplicationIcon>djdsoft.ico</ApplicationIcon>
-		<UseWindowsForms>true</UseWindowsForms>
-		<ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
-		<ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
+		<ApplicationIcon>..\FileTransferManager\djdsoft.ico</ApplicationIcon>
+		<UseWPF>true</UseWPF>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<Version>$([System.DateTime]::Now.ToString("yyyy.MM.dd.HHmm"))</Version>
 		<FileVersion>$([System.DateTime]::Now.ToString("yyyy.MM.dd.HHmm"))</FileVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="DoenaSoft.AbstractionLayer.WinForms" Version="1.1.9" />
-	  <PackageReference Include="DoenaSoft.WindowsAPICodePack" Version="2.0.0" />
+		<PackageReference Include="DoenaSoft.AbstractionLayer.WPF" Version="2.0.1" />
+		<PackageReference Include="DoenaSoft.WindowsAPICodePack" Version="2.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\FileTransferLib\FileTransferLib.csproj" />
+		<ProjectReference Include="..\FileTransferLib\FileTransferLib.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

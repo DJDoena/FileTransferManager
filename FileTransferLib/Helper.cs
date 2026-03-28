@@ -1,18 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Windows.Forms;
+using DoenaSoft.AbstractionLayer.IOServices;
+using DoenaSoft.AbstractionLayer.UIServices;
 
 namespace DoenaSoft.FileTransferManager;
 
-internal static class Helper
+public static class Helper
 {
-    internal static IEnumerable<CopyItem> AddFolder(CopyItem sourceFolderItem, bool withSubFolders)
+    public static IEnumerable<CopyItem> AddFolder(CopyItem sourceFolderItem
+        , bool withSubFolders)
     {
         var option = withSubFolders
-            ? SearchOption.AllDirectories
-            : SearchOption.TopDirectoryOnly;
+            ? System.IO.SearchOption.AllDirectories
+            : System.IO.SearchOption.TopDirectoryOnly;
 
         var files = sourceFolderItem.SourceFolder.GetFiles("*.*", option);
 
@@ -23,18 +24,21 @@ internal static class Helper
         return result;
     }
 
-    private static CopyItem AddFolderFile(CopyItem sourceFolderItem, FileInfo sourceFile)
+    private static CopyItem AddFolderFile(CopyItem sourceFolderItem
+        , IFileInfo sourceFile)
     {
         var sourceFolderBase = sourceFolderItem.SourceFolder.Parent; //SourceFolder can never be the drive letter
 
-        var relativeSourcePath = sourceFile.Directory.FullName.Substring(sourceFolderBase.FullName.Length);
+        var relativeSourcePath = sourceFile.Folder.FullName.Substring(sourceFolderBase.FullName.Length);
 
-        var targetPath = new DirectoryInfo(Path.Combine(sourceFolderItem.TargetFolder.FullName, relativeSourcePath));
+        var ioServices = sourceFile.IOServices;
+
+        var targetPath = ioServices.GetFolder(ioServices.Path.Combine(sourceFolderItem.TargetFolder.FullName, relativeSourcePath));
 
         return new CopyItem(sourceFile, targetPath);
     }
 
-    internal static long CalculateBytes(IEnumerable<CopyItem> copyItems, bool withSubFolders)
+    public static long CalculateBytes(IEnumerable<CopyItem> copyItems, bool withSubFolders)
     {
         try
         {
@@ -45,19 +49,19 @@ internal static class Helper
                 if (item.SourceFolder?.Exists == true)
                 {
                     var option = withSubFolders
-                        ? SearchOption.AllDirectories
-                        : SearchOption.TopDirectoryOnly;
+                        ? System.IO.SearchOption.AllDirectories
+                        : System.IO.SearchOption.TopDirectoryOnly;
 
                     var files = item.SourceFolder.GetFiles("*.*", option);
 
                     foreach (var file in files)
                     {
-                        bytes += file.Length;
+                        bytes += (long)file.Length;
                     }
                 }
                 else if (item.SourceFile?.Exists == true)
                 {
-                    bytes += item.SourceFile.Length;
+                    bytes += (long)item.SourceFile.Length;
                 }
             }
 
@@ -69,7 +73,7 @@ internal static class Helper
         }
     }
 
-    internal static string FormatBytes(long bytes)
+    public static string FormatBytes(long bytes)
     {
         decimal? roundBytes;
         string bytesPower;
@@ -107,7 +111,9 @@ internal static class Helper
         return $"{roundBytes}{bytesPower}";
     }
 
-    internal static (long bytes, long divider) CheckDriveSize(IEnumerable<CopyItem> items, IView view)
+    public static (long bytes, long divider) CheckDriveSize(IEnumerable<CopyItem> items
+        , IView view
+        , IIOServices ioServices)
     {
         var driveGroups = items
             .GroupBy(item => item.TargetFolder.Root.Name.Substring(0, 1))
@@ -121,15 +127,15 @@ internal static class Helper
 
             foreach (var item in driveGroup)
             {
-                driveBytes += item.SourceFile.Length;
+                driveBytes += (long)item.SourceFile.Length;
             }
 
-            var drive = new DriveInfo(driveGroup.Key);
+            var drive = ioServices.GetDrive(driveGroup.Key);
 
-            if (drive.AvailableFreeSpace <= driveBytes)
+            if ((long)drive.AvailableFreeSpace <= driveBytes)
             {
-                view.ShowMessageBox($"Target is Full!{Environment.NewLine}Available: {Helper.FormatBytes(drive.AvailableFreeSpace)}{Environment.NewLine}Needed: {Helper.FormatBytes(driveBytes)}"
-                    , "Target Full", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                view.ShowMessageBox($"Target is Full!{Environment.NewLine}Available: {FormatBytes((long)drive.AvailableFreeSpace)}{Environment.NewLine}Needed: {FormatBytes(driveBytes)}"
+                    , "Target Full", Buttons.OK, Icon.Warning);
 
                 return (-1, 1);
             }

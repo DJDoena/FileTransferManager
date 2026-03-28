@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
-using System.Windows.Forms;
+using DoenaSoft.AbstractionLayer.IOServices;
+using DoenaSoft.AbstractionLayer.UIServices;
 
 namespace DoenaSoft.FileTransferManager;
 
-internal sealed class Copier
+public sealed class Copier
 {
     private DateTime _start;
 
@@ -20,21 +20,28 @@ internal sealed class Copier
 
     private readonly IView _view;
 
+    private readonly IIOServices _ioServices;
+
     private Thread _worker;
 
-    private System.Windows.Forms.Timer _abortTimer;
+    private System.Timers.Timer _abortTimer;
 
-    public Copier(IReadOnlyCollection<CopyItem> items, OverwriteMode overwrite, long divider, IView view)
+    public Copier(IReadOnlyCollection<CopyItem> items
+        , OverwriteMode overwrite
+        , long divider
+        , IView view
+        , IIOServices ioServices)
     {
         _items = items;
         _overwrite = overwrite;
         _divider = divider;
         _view = view;
+        _ioServices = ioServices;
     }
 
     public event EventHandler CopyFinished;
 
-    internal void Start()
+    public void Start()
     {
         _worker = new Thread(this.CopyFiles)
         {
@@ -44,16 +51,16 @@ internal sealed class Copier
         _worker.Start();
     }
 
-    internal void Abort()
+    public void Abort()
     {
         if (_worker != null)
         {
-            _abortTimer = new System.Windows.Forms.Timer()
+            _abortTimer = new System.Timers.Timer()
             {
                 Interval = 100,
             };
 
-            _abortTimer.Tick += this.AbortTimerTick;
+            _abortTimer.Elapsed += this.AbortTimerTick;
             _abortTimer.Start();
 
             _worker.Abort();
@@ -78,15 +85,15 @@ internal sealed class Copier
                 }
             }
         }
-        catch (IOException ioEx)
+        catch (System.IO.IOException ioEx)
         {
-            _view.ShowMessageBox(ioEx.Message, "?!?", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            _view.ShowMessageBox(ioEx.Message, "?!?", Buttons.OK, Icon.Error);
 
             return;
         }
         catch (ThreadAbortException)
         {
-            _view.ShowMessageBox("The copy process was cancelled.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _view.ShowMessageBox("The copy process was cancelled.", "Cancelled", Buttons.OK, Icon.Warning);
 
             threadAbort = true;
 
@@ -94,7 +101,7 @@ internal sealed class Copier
         }
         catch (Exception ex)
         {
-            _view.ShowMessageBox(ex.Message, "?!?", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            _view.ShowMessageBox(ex.Message, "?!?", Buttons.OK, Icon.Error);
 
             return;
         }
@@ -112,28 +119,29 @@ internal sealed class Copier
         }
     }
 
-    private bool CopyFile(CopyItem item)
+    private bool CopyFile(CopyItem item
+        )
     {
         if (!item.TargetFolder.Exists)
         {
             item.TargetFolder.Create();
         }
 
-        var targetFile = new FileInfo(Path.Combine(item.TargetFolder.FullName, item.SourceFile.Name));
+        var targetFile = _ioServices.GetFile(_ioServices.Path.Combine(item.TargetFolder.FullName, item.SourceFile.Name));
 
         var overwriteDecision = this.GetOverwriteDecision(item, targetFile);
 
-        if (overwriteDecision == DialogResult.Cancel)
+        if (overwriteDecision == Result.Cancel)
         {
             return false;
         }
-        else if (overwriteDecision == DialogResult.No)
+        else if (overwriteDecision == Result.No)
         {
             this.SkipFile(item);
 
             return true;
         }
-        else if (overwriteDecision == DialogResult.Yes)
+        else if (overwriteDecision == Result.Yes)
         {
             var continueDecision = this.OverwriteFile(item, targetFile);
 
@@ -149,7 +157,7 @@ internal sealed class Copier
     {
         this.ExecuteOnUI(() =>
         {
-            _view.ProgressBarMax -= (int)(item.SourceFile.Length / _divider);
+            _view.ProgressBarMax -= (int)(((long)item.SourceFile.Length) / _divider);
 
             _view.UpdateProgressBar(_bytes, _divider, _start);
 
@@ -157,20 +165,20 @@ internal sealed class Copier
         });
     }
 
-    private bool OverwriteFile(CopyItem item, FileInfo targetFile)
+    private bool OverwriteFile(CopyItem item, IFileInfo targetFile)
     {
         try
         {
-            File.Copy(item.SourceFile.FullName, targetFile.FullName, true);
+            _ioServices.File.Copy(item.SourceFile.FullName, targetFile.FullName, true);
         }
-        catch (IOException ioEx)
+        catch (System.IO.IOException ioEx)
         {
-            var continueDecision = this.ShowTimedMessageBox($"{ioEx.Message}\nContinue?", "Continue?", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            var continueDecision = this.ShowTimedMessageBox($"{ioEx.Message}\nContinue?", "Continue?", Buttons.YesNo, Icon.Question);
 
-            return continueDecision == DialogResult.Yes;
+            return continueDecision == Result.Yes;
         }
 
-        _bytes += item.SourceFile.Length;
+        _bytes += (long)item.SourceFile.Length;
 
         this.ExecuteOnUI(() =>
         {
@@ -182,30 +190,30 @@ internal sealed class Copier
         return true;
     }
 
-    private DialogResult GetOverwriteDecision(CopyItem item, FileInfo targetFile)
+    private Result GetOverwriteDecision(CopyItem item, IFileInfo targetFile)
     {
         if (!targetFile.Exists)
         {
-            return DialogResult.Yes;
+            return Result.Yes;
         }
         else if (_overwrite == OverwriteMode.Ask)
         {
             var decision = this.ShowTimedMessageBox($"Overwrite \"{targetFile.FullName}\"\nfrom \"{item.SourceFile.FullName}\"?", "Overwrite?"
-                , MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                , Buttons.YesNoCancel, Icon.Question);
 
             return decision;
         }
         else if (_overwrite == OverwriteMode.Always)
         {
-            return DialogResult.Yes;
+            return Result.Yes;
         }
         else
         {
-            return DialogResult.No;
+            return Result.No;
         }
     }
 
-    private DialogResult ShowTimedMessageBox(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon)
+    private Result ShowTimedMessageBox(string message, string title, Buttons buttons, Icon icon)
     {
         var openDialogTimestamp = DateTime.UtcNow;
 

@@ -1,23 +1,23 @@
-﻿using System.IO;
+﻿using DoenaSoft.AbstractionLayer.IOServices;
 
 namespace DoenaSoft.FileTransferManager;
 
-internal sealed class CopyItem
+public sealed class CopyItem
 {
-    internal DirectoryInfo SourceFolder { get; }
+    public IFolderInfo SourceFolder { get; }
 
-    internal FileInfo SourceFile { get; }
+    public IFileInfo SourceFile { get; }
 
-    internal DirectoryInfo TargetFolder { get; }
+    public IFolderInfo TargetFolder { get; }
 
-    internal CopyItem(DirectoryInfo sourceFolder, DirectoryInfo targetFolder)
+    public CopyItem(IFolderInfo sourceFolder, IFolderInfo targetFolder)
     {
         this.SourceFolder = sourceFolder;
         this.SourceFile = null;
         this.TargetFolder = targetFolder;
     }
 
-    internal CopyItem(FileInfo sourceFile, DirectoryInfo targetFolder)
+    public CopyItem(IFileInfo sourceFile, IFolderInfo targetFolder)
     {
         this.SourceFolder = null;
         this.SourceFile = sourceFile;

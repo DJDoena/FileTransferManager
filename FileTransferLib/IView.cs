@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Windows.Forms;
+using DoenaSoft.AbstractionLayer.UIServices;
 
 namespace DoenaSoft.FileTransferManager;
 
-internal interface IView
+public interface IView
 {
     bool InvokeRequired { get; }
 
@@ -11,7 +11,7 @@ internal interface IView
 
     object Invoke(Delegate method);
 
-    DialogResult ShowMessageBox(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon);
+    Result ShowMessageBox(string message, string title, Buttons buttons, Icon icon);
 
     void UpdateProgressBar(long bytes, long divider, DateTime start);
 

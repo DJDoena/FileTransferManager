@@ -1,6 +1,6 @@
 ﻿namespace DoenaSoft.FileTransferManager;
 
-internal enum OverwriteMode
+public enum OverwriteMode
 {
     Ask,
     Always,

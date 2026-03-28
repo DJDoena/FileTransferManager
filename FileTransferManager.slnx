@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="FileTransferLib/FileTransferLib.csproj" />
+  <Project Path="FileTransferManager/FileTransferManager.csproj" DefaultStartup="true" />
+  <Project Path="FileTransferWpf/FileTransferWpf.csproj" />
+</Solution>
