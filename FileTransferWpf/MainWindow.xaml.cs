@@ -61,7 +61,7 @@ public partial class MainWindow : Window, IView
 
     public Result ShowMessageBox(string message
         , string title
-        , Buttons buttons, Icon icon)
+        , MessageButtons buttons, MessageIcon icon)
         => _uiServices.ShowMessageBox(message, title, buttons, icon);
 
     public void UpdateProgressBar(long bytes
@@ -192,7 +192,7 @@ public partial class MainWindow : Window, IView
             }
                 else
             {
-                this.ShowMessageBox($"Something is weird about{Environment.NewLine}{sourceItem}", "?!?", Buttons.OK, DoenaSoft.AbstractionLayer.UIServices.Icon.Error);
+                this.ShowMessageBox($"Something is weird about{Environment.NewLine}{sourceItem}", "?!?", MessageButtons.OK, MessageIcon.Error);
             }
         }
 

@@ -135,7 +135,7 @@ public static class Helper
             if ((long)drive.AvailableFreeSpace <= driveBytes)
             {
                 view.ShowMessageBox($"Target is Full!{Environment.NewLine}Available: {FormatBytes((long)drive.AvailableFreeSpace)}{Environment.NewLine}Needed: {FormatBytes(driveBytes)}"
-                    , "Target Full", Buttons.OK, Icon.Warning);
+                    , "Target Full", MessageButtons.OK, MessageIcon.Warning);
 
                 return (-1, 1);
             }

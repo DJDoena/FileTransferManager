@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using DoenaSoft.AbstractionLayer.IOServices;
 using DoenaSoft.AbstractionLayer.UIServices;
@@ -14,7 +13,7 @@ namespace DoenaSoft.FileTransferManager;
 
 internal partial class MainForm : Form, IView
 {
-    private MainWindowController _controller;
+    private readonly MainWindowController _controller;
 
     private Copier _copier;
 
@@ -98,7 +97,7 @@ internal partial class MainForm : Form, IView
     }
 
     private void ShowNotOnLetterDriveErrror(string selectedPath)
-        => this.ShowMessageBox($"'{selectedPath}' is not valid.{Environment.NewLine}Please choose file / folder on a letter drive.", "Invalid", Buttons.OK, AbstractionLayer.UIServices.Icon.Warning);
+        => this.ShowMessageBox($"'{selectedPath}' is not valid.{Environment.NewLine}Please choose file / folder on a letter drive.", "Invalid", MessageButtons.OK, MessageIcon.Warning);
 
     // Drive checks and target dialog moved to MainController
 
@@ -185,7 +184,7 @@ internal partial class MainForm : Form, IView
             }
             else
             {
-                this.ShowMessageBox($"Something is weird about{Environment.NewLine}{sourceItem}", "?!?", Buttons.OK, AbstractionLayer.UIServices.Icon.Error);
+                this.ShowMessageBox($"Something is weird about{Environment.NewLine}{sourceItem}", "?!?", MessageButtons.OK, MessageIcon.Error);
             }
         }
 
@@ -250,7 +249,7 @@ internal partial class MainForm : Form, IView
         this.SwitchUI(true);
     }
 
-    public Result ShowMessageBox(string message, string title, Buttons buttons, Icon icon)
+    public Result ShowMessageBox(string message, string title, MessageButtons buttons, MessageIcon icon)
     {
         var func = new Func<Result>(() => _uiServices.ShowMessageBox(message, title, buttons, icon));
 
@@ -400,7 +399,7 @@ internal partial class MainForm : Form, IView
             }
             catch (Exception ex)
             {
-                this.ShowMessageBox(ex.Message, "Error", Buttons.OK, AbstractionLayer.UIServices.Icon.Error);
+                this.ShowMessageBox(ex.Message, "Error", MessageButtons.OK, MessageIcon.Error);
             }
         }
     }

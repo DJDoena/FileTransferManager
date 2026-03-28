@@ -11,7 +11,7 @@ public interface IView
 
     object Invoke(Delegate method);
 
-    Result ShowMessageBox(string message, string title, Buttons buttons, Icon icon);
+    Result ShowMessageBox(string message, string title, MessageButtons buttons, MessageIcon icon);
 
     void UpdateProgressBar(long bytes, long divider, DateTime start);
 

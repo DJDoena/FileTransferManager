@@ -87,13 +87,13 @@ public sealed class Copier
         }
         catch (System.IO.IOException ioEx)
         {
-            _view.ShowMessageBox(ioEx.Message, "?!?", Buttons.OK, Icon.Error);
+            _view.ShowMessageBox(ioEx.Message, "?!?", MessageButtons.OK, MessageIcon.Error);
 
             return;
         }
         catch (ThreadAbortException)
         {
-            _view.ShowMessageBox("The copy process was cancelled.", "Cancelled", Buttons.OK, Icon.Warning);
+            _view.ShowMessageBox("The copy process was cancelled.", "Cancelled", MessageButtons.OK, MessageIcon.Warning);
 
             threadAbort = true;
 
@@ -101,7 +101,7 @@ public sealed class Copier
         }
         catch (Exception ex)
         {
-            _view.ShowMessageBox(ex.Message, "?!?", Buttons.OK, Icon.Error);
+            _view.ShowMessageBox(ex.Message, "?!?", MessageButtons.OK, MessageIcon.Error);
 
             return;
         }
@@ -173,7 +173,7 @@ public sealed class Copier
         }
         catch (System.IO.IOException ioEx)
         {
-            var continueDecision = this.ShowTimedMessageBox($"{ioEx.Message}\nContinue?", "Continue?", Buttons.YesNo, Icon.Question);
+            var continueDecision = this.ShowTimedMessageBox($"{ioEx.Message}\nContinue?", "Continue?", MessageButtons.YesNo, MessageIcon.Question);
 
             return continueDecision == Result.Yes;
         }
@@ -199,7 +199,7 @@ public sealed class Copier
         else if (_overwrite == OverwriteMode.Ask)
         {
             var decision = this.ShowTimedMessageBox($"Overwrite \"{targetFile.FullName}\"\nfrom \"{item.SourceFile.FullName}\"?", "Overwrite?"
-                , Buttons.YesNoCancel, Icon.Question);
+                , MessageButtons.YesNoCancel, MessageIcon.Question);
 
             return decision;
         }
@@ -213,7 +213,7 @@ public sealed class Copier
         }
     }
 
-    private Result ShowTimedMessageBox(string message, string title, Buttons buttons, Icon icon)
+    private Result ShowTimedMessageBox(string message, string title, MessageButtons buttons, MessageIcon icon)
     {
         var openDialogTimestamp = DateTime.UtcNow;
 

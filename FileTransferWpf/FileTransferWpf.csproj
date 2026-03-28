@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<AssemblyName>FileTransferManager</AssemblyName>
@@ -14,7 +14,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="DoenaSoft.AbstractionLayer.WPF" Version="2.0.1" />
+		<PackageReference Include="DoenaSoft.AbstractionLayer.IO.Default" Version="1.0.0" />
+		<PackageReference Include="DoenaSoft.AbstractionLayer.WPF" Version="3.0.2" />
 		<PackageReference Include="DoenaSoft.WindowsAPICodePack" Version="2.0.0" />
 	</ItemGroup>
 
