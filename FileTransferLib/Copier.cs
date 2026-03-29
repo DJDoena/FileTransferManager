@@ -18,7 +18,7 @@ public sealed class Copier
 
     private readonly long _divider;
 
-    private readonly IView _view;
+    private readonly IMainWindowView _view;
 
     private readonly IIOServices _ioServices;
 
@@ -29,7 +29,7 @@ public sealed class Copier
     public Copier(IReadOnlyCollection<CopyItem> items
         , OverwriteMode overwrite
         , long divider
-        , IView view
+        , IMainWindowView view
         , IIOServices ioServices)
     {
         _items = items;

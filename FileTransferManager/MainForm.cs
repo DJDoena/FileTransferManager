@@ -11,7 +11,7 @@ using Microsoft.WindowsAPICodePack.Taskbar;
 
 namespace DoenaSoft.FileTransferManager;
 
-internal partial class MainForm : Form, IView
+internal partial class MainForm : Form, IMainWindowView
 {
     private readonly MainWindowController _controller;
 
@@ -24,7 +24,7 @@ internal partial class MainForm : Form, IView
     private IEnumerable<CopyItem> SourceListBoxItems
         => SourceListBox.Items.Cast<CopyItem>().ToList();
 
-    int IView.ProgressBarMax
+    int IMainWindowView.ProgressBarMax
     {
         get => CopyProgressBar.Maximum;
         set => CopyProgressBar.Maximum = value;

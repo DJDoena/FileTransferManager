@@ -11,7 +11,7 @@ using DoenaSoft.AbstractionLayer.UIServices;
 
 namespace DoenaSoft.FileTransferManager;
 
-public partial class MainWindow : Window, IView
+public partial class MainWindow : Window, IMainWindowView
 {
     private readonly IIOServices _ioServices;
 

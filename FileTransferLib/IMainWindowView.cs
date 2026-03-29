@@ -3,7 +3,7 @@ using DoenaSoft.AbstractionLayer.UIServices;
 
 namespace DoenaSoft.FileTransferManager;
 
-public interface IView
+public interface IMainWindowView
 {
     bool InvokeRequired { get; }
 

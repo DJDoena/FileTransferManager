@@ -112,7 +112,7 @@ public static class Helper
     }
 
     public static (long bytes, long divider) CheckDriveSize(IEnumerable<CopyItem> items
-        , IView view
+        , IMainWindowView view
         , IIOServices ioServices)
     {
         var driveGroups = items
