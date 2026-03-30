@@ -249,12 +249,12 @@ internal partial class MainForm : Form, IMainWindowView
         this.SwitchUI(true);
     }
 
-    public Result ShowMessageBox(string message, string title, MessageButtons buttons, MessageIcon icon)
+    public MessageResult ShowMessageBox(string message, string title, MessageButtons buttons, MessageIcon icon)
     {
-        var func = new Func<Result>(() => _uiServices.ShowMessageBox(message, title, buttons, icon));
+        var func = new Func<MessageResult>(() => _uiServices.ShowMessageBox(message, title, buttons, icon));
 
         var result = this.InvokeRequired
-            ? (Result)this.Invoke(func)
+            ? (MessageResult)this.Invoke(func)
             : func();
 
         return result;

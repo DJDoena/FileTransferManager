@@ -59,7 +59,7 @@ public partial class MainWindow : Window, IMainWindowView
         return result;
     }
 
-    public Result ShowMessageBox(string message
+    public MessageResult ShowMessageBox(string message
         , string title
         , MessageButtons buttons, MessageIcon icon)
         => _uiServices.ShowMessageBox(message, title, buttons, icon);

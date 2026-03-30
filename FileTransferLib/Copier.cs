@@ -131,17 +131,17 @@ public sealed class Copier
 
         var overwriteDecision = this.GetOverwriteDecision(item, targetFile);
 
-        if (overwriteDecision == Result.Cancel)
+        if (overwriteDecision == MessageResult.Cancel)
         {
             return false;
         }
-        else if (overwriteDecision == Result.No)
+        else if (overwriteDecision == MessageResult.No)
         {
             this.SkipFile(item);
 
             return true;
         }
-        else if (overwriteDecision == Result.Yes)
+        else if (overwriteDecision == MessageResult.Yes)
         {
             var continueDecision = this.OverwriteFile(item, targetFile);
 
@@ -175,7 +175,7 @@ public sealed class Copier
         {
             var continueDecision = this.ShowTimedMessageBox($"{ioEx.Message}\nContinue?", "Continue?", MessageButtons.YesNo, MessageIcon.Question);
 
-            return continueDecision == Result.Yes;
+            return continueDecision == MessageResult.Yes;
         }
 
         _bytes += (long)item.SourceFile.Length;
@@ -190,11 +190,11 @@ public sealed class Copier
         return true;
     }
 
-    private Result GetOverwriteDecision(CopyItem item, IFileInfo targetFile)
+    private MessageResult GetOverwriteDecision(CopyItem item, IFileInfo targetFile)
     {
         if (!targetFile.Exists)
         {
-            return Result.Yes;
+            return MessageResult.Yes;
         }
         else if (_overwrite == OverwriteMode.Ask)
         {
@@ -205,15 +205,15 @@ public sealed class Copier
         }
         else if (_overwrite == OverwriteMode.Always)
         {
-            return Result.Yes;
+            return MessageResult.Yes;
         }
         else
         {
-            return Result.No;
+            return MessageResult.No;
         }
     }
 
-    private Result ShowTimedMessageBox(string message, string title, MessageButtons buttons, MessageIcon icon)
+    private MessageResult ShowTimedMessageBox(string message, string title, MessageButtons buttons, MessageIcon icon)
     {
         var openDialogTimestamp = DateTime.UtcNow;
 
