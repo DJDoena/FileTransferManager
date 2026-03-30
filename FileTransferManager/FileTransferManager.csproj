@@ -16,8 +16,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="DoenaSoft.AbstractionLayer.IO.Default" Version="1.0.1" />
-	  <PackageReference Include="DoenaSoft.AbstractionLayer.WinForms" Version="2.0.3" />
+	  <PackageReference Include="DoenaSoft.AbstractionLayer.IO.Default" Version="1.0.2" />
+	  <PackageReference Include="DoenaSoft.AbstractionLayer.WinForms" Version="2.0.4" />
 	  <PackageReference Include="DoenaSoft.WindowsAPICodePack" Version="4.7.5" />
 	</ItemGroup>
 
